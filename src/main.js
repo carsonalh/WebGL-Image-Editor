@@ -15,7 +15,7 @@ function render(gl) {
     const program = getProgramInfo();
     const { buffers, camera } = program;
 
-    gl.clearColor(0.17, 0.14, 0.22, 1.0); 
+    gl.clearColor(0.15, 0.15, 0.15, 1.0); 
     gl.clearDepth(1.0);                 
 
     gl.clear(gl.COLOR_BUFFER_BIT);

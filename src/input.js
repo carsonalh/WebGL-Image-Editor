@@ -1,7 +1,7 @@
 import { getProgramInfo } from "./programInfo";
 
 function setupInput(canvas) {
-    canvas.onclick = function(ev) {
+    canvas.onmousedown = function(ev) {
         ev.preventDefault();
         const [clickX, clickY] = [ev.offsetX, ev.offsetY];
         const program = getProgramInfo();
@@ -28,13 +28,31 @@ function setupInput(canvas) {
             // Make it blue (for now)
             const pixelIndex = 4 * (texturePixelLength * pixelY + pixelX);
 
-            program.textureData[pixelIndex + 0] = 0x00;
-            program.textureData[pixelIndex + 1] = 0x00;
-            program.textureData[pixelIndex + 2] = 0xFF;
+            const colorPicker = document.getElementById('color-picker');
+            if (!colorPicker) {
+                throw new Error('The color picker element could not be found.');
+            }
+
+            const color = parseColorInput(colorPicker.value);
+
+            program.textureData[pixelIndex + 0] = color[0];
+            program.textureData[pixelIndex + 1] = color[1];
+            program.textureData[pixelIndex + 2] = color[2];
             program.textureData[pixelIndex + 3] = 0xFF;
             program.update();
         }
     };
+}
+
+function parseColorInput(string) {
+    let m;
+    if (m = string.match(/^#([0-9a-f]{6})$/i)[1]) {
+        return [
+            parseInt(m.substr(0, 2), 16),
+            parseInt(m.substr(2, 2), 16),
+            parseInt(m.substr(4, 2), 16)
+        ];
+    }
 }
 
 export { setupInput };

@@ -71,8 +71,8 @@ function createTexture(gl) {
     const type = gl.UNSIGNED_BYTE;
     const pixels = [];
     for (let i = 0; i < width * height; ++i) {
-        // RGBA opaque light gray
-        pixels.push(0xFF, Math.floor(Math.random() * 0x100), 0x00, 0xFF);
+        // RGBA opaque white
+        pixels.push(0xFF, 0xFF, 0xFF, 0xFF);
     }
     const imageData = new Uint8Array(pixels);
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, imageData);

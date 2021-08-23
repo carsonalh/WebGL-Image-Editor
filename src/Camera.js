@@ -40,6 +40,28 @@ class Camera {
 
         return mat;
     }
+
+    screenToWorld([x, y], canvas) {
+        const createMapper = (fromStart, fromEnd, toStart, toEnd) => x => {
+            // Get where x is from fromStart (0) to fromEnd (1) as a percentage
+            const fromPercent = (x - fromStart) / (fromEnd - fromStart);
+            // Apply that percentage to the 'to' range
+            const to = toStart + fromPercent * (toEnd - toStart);
+            return to;
+        };
+    
+        const mapX = createMapper(0, canvas.width, -this.width / 2, this.width / 2);
+        const mapY = createMapper(0, canvas.height, this.height / 2, -this.height / 2);
+        return [mapX(x), mapY(y)];
+    }
+
+    get width() {
+        return this._scale * this._aspectRatio;
+    }
+
+    get height() {
+        return this._scale;
+    }
 }
 
 export default Camera;

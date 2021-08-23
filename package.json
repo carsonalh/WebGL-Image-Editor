@@ -4,7 +4,7 @@
   "description": "WebGL application for editing low-resolution images.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npx webpack-dev-server --config ./webpack.config.js"
   },
   "keywords": [],
   "author": "",

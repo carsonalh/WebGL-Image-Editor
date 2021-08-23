@@ -5,7 +5,7 @@ class Camera {
         this._scale = 1;
         this._aspectRatio = aspectRatio;
     }
-    
+
     resetScale() {
         this._scale = 1;
     }

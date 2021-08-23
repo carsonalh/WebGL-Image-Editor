@@ -42,6 +42,18 @@ function setupInput(canvas) {
             program.update();
         }
     };
+
+    canvas.onwheel = function(ev) {
+        ev.preventDefault();
+        const program = getProgramInfo();
+        const { camera } = program;
+        
+        if (ev.deltaY !== 0) {
+            const direction = Math.sign(ev.deltaY);
+            camera.multiplyScale(1 + (0.05 * direction));
+            program.update();
+        }
+    };
 }
 
 function parseColorInput(string) {

@@ -74,7 +74,7 @@ function createTexture(gl) {
         // RGBA opaque white
         pixels.push(0xFF, 0xFF, 0xFF, 0xFF);
     }
-    const imageData = new Uint8Array(pixels);
+    const imageData = new Uint8ClampedArray(pixels);
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, imageData);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);

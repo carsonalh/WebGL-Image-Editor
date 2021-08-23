@@ -4,9 +4,20 @@ import { setupInput } from './input';
 import createProgram from './createProgram';
 
 export default function main(gl) {
-    const programInfo = createProgram(gl);
-    programInfo.update = () => render(gl);
-    setProgramInfo(programInfo);
+    const program = createProgram(gl);
+    program.update = () => {
+        const download = document.getElementById('image-download');
+        const blob = new Blob([program.textureData.buffer], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        if (download.href !== "#") {
+            URL.revokeObjectURL(download.href);
+        }
+        download.download = "image-data.bin";
+        download.href = url;
+
+        render(gl);
+    };
+    setProgramInfo(program);
     setupInput(gl.canvas);
     render(gl);
 }

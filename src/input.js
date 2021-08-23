@@ -54,6 +54,11 @@ function setupInput(canvas) {
             program.update();
         }
     };
+
+    const downloadButton = document.getElementById('image-download');
+
+    downloadButton.onclick = function(ev) {
+    };
 }
 
 function parseColorInput(string) {

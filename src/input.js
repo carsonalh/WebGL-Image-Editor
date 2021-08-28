@@ -8,7 +8,7 @@ function setupInput(canvas) {
         const { camera } = program;
         const [worldX, worldY] = camera.screenToWorld([clickX, clickY], canvas);
         
-        const { textureWidth, textureHeight, texturePixelLength } = program;
+        const { textureWidth, textureHeight, textureSprite: sprite } = program;
 
         // Image will always be centred at (0, 0); test if the click was in that image
         if (
@@ -22,23 +22,17 @@ function setupInput(canvas) {
             // Down should be positive Y
             const localY = (textureHeight / 2) - worldY;
 
-            const pixelX = Math.floor(texturePixelLength * localX);
-            const pixelY = Math.floor(texturePixelLength * localY);
-
-            // Make it blue (for now)
-            const pixelIndex = 4 * (texturePixelLength * pixelY + pixelX);
+            const pixelX = Math.floor(sprite.width * localX);
+            const pixelY = Math.floor(sprite.height * localY);
 
             const colorPicker = document.getElementById('color-picker');
             if (!colorPicker) {
                 throw new Error('The color picker element could not be found.');
             }
 
-            const color = parseColorInput(colorPicker.value);
+            const color = [...parseColorInput(colorPicker.value), 0xFF];
 
-            program.textureData[pixelIndex + 0] = color[0];
-            program.textureData[pixelIndex + 1] = color[1];
-            program.textureData[pixelIndex + 2] = color[2];
-            program.textureData[pixelIndex + 3] = 0xFF;
+            sprite.setPixel([pixelX, pixelY], color);
             program.update();
         }
     };

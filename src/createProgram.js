@@ -1,4 +1,5 @@
 import Camera from './Camera';
+import Sprite from './Sprite';
 
 const vertexSource = `
 attribute vec4 aVertexPosition;
@@ -28,11 +29,12 @@ void main() {
 export default function createProgram(gl) {
     const shaderProgram = createShaderProgram(gl, vertexSource, fragmentSource);
     const buffers = createBuffers(gl);
-    const textureData = createTexture(gl);
-
+    
     const aspectRatio = gl.canvas.width / gl.canvas.height;
     const camera = new Camera(aspectRatio);
-
+    
+    const sprite = new Sprite(32, 32);
+    
     return {
         program: shaderProgram,
         attribLocations: {
@@ -45,45 +47,12 @@ export default function createProgram(gl) {
             texture: gl.getUniformLocation(shaderProgram, 'uSampler'),
         },
         buffers,
-        texture: textureData.texture,
-        texturePixelLength: textureData.pixelLength,
-        textureWidth: textureData.width,
-        textureHeight: textureData.height,
-        textureData: textureData.imageData,
+        texture: gl.createTexture(),
+        textureWidth: 1,
+        textureHeight: 1,
+        textureSprite: sprite,
         camera,
     };
-}
-
-function createTexture(gl) {
-    const texture = gl.createTexture();
-    const slot = 0;
-    gl.activeTexture(gl.TEXTURE0 + slot);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-  
-    const level = 0;
-    const internalFormat = gl.RGBA;
-    const width = 32;
-    const height = width;
-    const border = 0;
-    // According to the docs, this must be the same as 'internalFormat'
-    // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/texImage2D
-    const format = internalFormat;
-    const type = gl.UNSIGNED_BYTE;
-    const pixels = [];
-    for (let i = 0; i < width * height; ++i) {
-        // RGBA opaque white
-        pixels.push(0xFF, 0xFF, 0xFF, 0xFF);
-    }
-    const imageData = new Uint8ClampedArray(pixels);
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, imageData);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.generateMipmap(gl.TEXTURE_2D);
-
-    // Unbind the texture
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    return {texture, width: 1, height: 1, pixelLength: width, imageData};
 }
 
 function createShaderProgram(gl, vertexSource, fragmentSource) {

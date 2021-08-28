@@ -7,7 +7,7 @@ export default function main(gl) {
     const program = createProgram(gl);
     program.update = () => {
         const download = document.getElementById('image-download');
-        const blob = new Blob([program.textureData.buffer], { type: "application/octet-stream" });
+        const blob = new Blob([program.textureSprite.buffer], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
         if (download.href !== "#") {
             URL.revokeObjectURL(download.href);
@@ -24,7 +24,7 @@ export default function main(gl) {
 
 function render(gl) {
     const program = getProgramInfo();
-    const { buffers, camera } = program;
+    const { buffers, camera, textureSprite: sprite } = program;
 
     gl.clearColor(0.15, 0.15, 0.15, 1.0); 
     gl.clearDepth(1.0);                 
@@ -69,11 +69,14 @@ function render(gl) {
         const level = 0;
         const internalFormat = gl.RGBA;
         const format = internalFormat;
-        const height = program.texturePixelLength;
-        const width = height;
+        const { width, height } = sprite;
         const border = 0;
         const type = gl.UNSIGNED_BYTE;
-        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, program.textureData);
+        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, sprite.buffer);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.generateMipmap(gl.TEXTURE_2D);
 
         gl.uniform1i(program.uniformLocations.texture, slot);

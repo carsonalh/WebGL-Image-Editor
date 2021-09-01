@@ -81,6 +81,9 @@ function createShaderProgram(gl, vertexSource, fragmentSource) {
         throw new Error(`Could not create the shader program:\n${gl.getProgramInfoLog(shaderProgram)}`);
     }
 
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
     return shaderProgram;
 }
 

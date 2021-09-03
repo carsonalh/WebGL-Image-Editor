@@ -1,7 +1,9 @@
+import store from './store';
 import { mat4 } from 'gl-matrix';
 import { setProgramInfo, getProgramInfo } from './programInfo';
 import { setupInput } from './input';
 import createProgram from './createProgram';
+import { getCameraMatrix } from './camera';
 
 export default function main(gl) {
     const program = createProgram(gl);
@@ -24,7 +26,7 @@ export default function main(gl) {
 
 function render(gl) {
     const program = getProgramInfo();
-    const { buffers, camera, textureSprite: sprite } = program;
+    const { buffers, textureSprite: sprite } = program;
 
     gl.clearColor(0.15, 0.15, 0.15, 1.0); 
     gl.clearDepth(1.0);                 
@@ -58,7 +60,12 @@ function render(gl) {
     
     gl.useProgram(program.program);
 
-    gl.uniformMatrix4fv(program.uniformLocations.projectionMatrix, false, camera.getProjectionMatrix());
+    const projectionMatrix = getCameraMatrix({
+        scale: store.getState().scene.cameraScale,
+        aspectRatio: gl.canvas.width / gl.canvas.height
+    });
+
+    gl.uniformMatrix4fv(program.uniformLocations.projectionMatrix, false, projectionMatrix);
     gl.uniformMatrix4fv(program.uniformLocations.modelViewMatrix, false, modelViewMatrix);
     
     {
@@ -66,13 +73,16 @@ function render(gl) {
         gl.activeTexture(gl.TEXTURE0 + slot);
         gl.bindTexture(gl.TEXTURE_2D, program.texture);
 
+        // const buffer = store.getState().scene.imageData;
+        const buffer = sprite._buffer;
+
         const level = 0;
         const internalFormat = gl.RGBA;
         const format = internalFormat;
         const { width, height } = sprite;
         const border = 0;
         const type = gl.UNSIGNED_BYTE;
-        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, sprite.buffer);
+        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, buffer);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);

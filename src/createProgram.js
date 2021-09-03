@@ -1,4 +1,3 @@
-import Camera from './Camera';
 import Sprite from './Sprite';
 
 const vertexSource = `
@@ -30,11 +29,8 @@ export default function createProgram(gl) {
     const shaderProgram = createShaderProgram(gl, vertexSource, fragmentSource);
     const buffers = createBuffers(gl);
     
-    const aspectRatio = gl.canvas.width / gl.canvas.height;
-    const camera = new Camera(aspectRatio);
-    
     const sprite = new Sprite(32, 32);
-    
+
     return {
         program: shaderProgram,
         attribLocations: {
@@ -51,7 +47,6 @@ export default function createProgram(gl) {
         textureWidth: 1,
         textureHeight: 1,
         textureSprite: sprite,
-        camera,
     };
 }
 

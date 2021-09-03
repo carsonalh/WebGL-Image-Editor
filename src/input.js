@@ -1,12 +1,17 @@
+import store from './store';
+import { screenToWorld } from "./camera";
 import { getProgramInfo } from "./programInfo";
+import { multiplyCameraScale } from "./store";
 
 function setupInput(canvas) {
     canvas.onmousedown = function(ev) {
         ev.preventDefault();
         const [clickX, clickY] = [ev.offsetX, ev.offsetY];
         const program = getProgramInfo();
-        const { camera } = program;
-        const [worldX, worldY] = camera.screenToWorld([clickX, clickY], canvas);
+        const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
+            width: canvas.width / canvas.height,
+            height: 1
+        });
         
         const { textureWidth, textureHeight, textureSprite: sprite } = program;
 
@@ -40,11 +45,11 @@ function setupInput(canvas) {
     canvas.onwheel = function(ev) {
         ev.preventDefault();
         const program = getProgramInfo();
-        const { camera } = program;
         
         if (ev.deltaY !== 0) {
             const direction = Math.sign(ev.deltaY);
-            camera.multiplyScale(1 + (0.05 * direction));
+            const scalePercentage = 1.00 + 0.07 * direction;
+            store.dispatch(multiplyCameraScale(scalePercentage));
             program.update();
         }
     };

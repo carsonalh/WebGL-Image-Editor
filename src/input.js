@@ -1,6 +1,5 @@
 import store, { setImagePixel } from './store';
 import { screenToWorld } from "./camera";
-import { getProgramInfo } from "./programInfo";
 import { multiplyCameraScale } from "./store";
 
 function setupInput(canvas, program) {

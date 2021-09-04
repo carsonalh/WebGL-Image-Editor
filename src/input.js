@@ -3,11 +3,10 @@ import { screenToWorld } from "./camera";
 import { getProgramInfo } from "./programInfo";
 import { multiplyCameraScale } from "./store";
 
-function setupInput(canvas) {
-    canvas.onmousedown = function(ev) {
+function setupInput(canvas, program) {
+    canvas.onmousedown = (ev) => {
         ev.preventDefault();
         const [clickX, clickY] = [ev.offsetX, ev.offsetY];
-        const program = getProgramInfo();
         const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
             width: canvas.width / canvas.height,
             height: 1
@@ -52,10 +51,9 @@ function setupInput(canvas) {
         }
     };
 
-    canvas.onwheel = function(ev) {
+    canvas.onwheel = (ev) => {
         ev.preventDefault();
-        const program = getProgramInfo();
-        
+
         if (ev.deltaY !== 0) {
             const direction = Math.sign(ev.deltaY);
             const scalePercentage = 1.00 + 0.07 * direction;

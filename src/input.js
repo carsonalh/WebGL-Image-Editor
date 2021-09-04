@@ -6,9 +6,10 @@ function setupInput(canvas, program) {
     canvas.onmousedown = (ev) => {
         ev.preventDefault();
         const [clickX, clickY] = [ev.offsetX, ev.offsetY];
+        const { cameraScale } = store.getState().scene;
         const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
-            width: canvas.width / canvas.height,
-            height: 1
+            width: cameraScale * canvas.width / canvas.height,
+            height: cameraScale
         });
         
         const { textureWidth, textureHeight } = program;
@@ -20,6 +21,8 @@ function setupInput(canvas, program) {
         ) {
             const { imageWidth: width, imageHeight: height } = store.getState().scene;
             // Now find the pixel to paint
+
+            const { cameraScale } = store.getState().scene;
 
             // Right should be positive X
             const localX = worldX - (-textureWidth / 2);

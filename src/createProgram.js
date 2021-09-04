@@ -29,8 +29,6 @@ export default function createProgram(gl) {
     const shaderProgram = createShaderProgram(gl, vertexSource, fragmentSource);
     const buffers = createBuffers(gl);
     
-    const sprite = new Sprite(32, 32);
-
     return {
         program: shaderProgram,
         attribLocations: {
@@ -45,8 +43,7 @@ export default function createProgram(gl) {
         buffers,
         texture: gl.createTexture(),
         textureWidth: 1,
-        textureHeight: 1,
-        textureSprite: sprite,
+        textureHeight: 1
     };
 }
 

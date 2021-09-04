@@ -8,7 +8,7 @@ const sceneSlice = createSlice({
         cameraScale: 1,
         imageWidth: 32,
         imageHeight: 32,
-        imageData: new Uint32Array(32 * 32),
+        imageData: new Array(4 * 32 * 32).fill(0xFF),
     },
     reducers: {
         setCameraPosition(state, action) {
@@ -27,18 +27,16 @@ const sceneSlice = createSlice({
         multiplyCameraScale(state, action) {
             state.cameraScale *= action.payload;
         },
-        // setImageBuffer(state, action) {
-        //     state.imageData = action.payload;
-        // },
-        // setImageSize(state, action) {
-        //     const { width, height } = action.payload;
-        //     state.imageWidth = width;
-        //     state.imageHeight = height;
-        // },
         setImagePixel(state, action) {
-            const {x, y} = action.payload.xy;
+            const { x, y } = action.payload.xy;
             const width = state.imageWidth;
-            state.imageData[y * width + x] = action.payload.color;
+            const pxIndex = y * width + x;
+            const { color } = action.payload;
+
+            state.imageData[4 * pxIndex + 0] = (color & 0x000000FF) >> (0 * 8);
+            state.imageData[4 * pxIndex + 1] = (color & 0x0000FF00) >> (1 * 8);
+            state.imageData[4 * pxIndex + 2] = (color & 0x00FF0000) >> (2 * 8);
+            state.imageData[4 * pxIndex + 3] = (color & 0xFF000000) >> (3 * 8);
         }
     }
 });

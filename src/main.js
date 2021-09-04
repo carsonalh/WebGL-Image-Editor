@@ -8,14 +8,14 @@ import { getCameraMatrix } from './camera';
 export default function main(gl) {
     const program = createProgram(gl);
     program.update = () => {
-        const download = document.getElementById('image-download');
-        const blob = new Blob([program.textureSprite.buffer], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
-        if (download.href !== "#") {
-            URL.revokeObjectURL(download.href);
-        }
-        download.download = "image-data.bin";
-        download.href = url;
+        // const download = document.getElementById('image-download');
+        // const blob = new Blob([program.textureSprite.buffer], { type: "application/octet-stream" });
+        // const url = URL.createObjectURL(blob);
+        // if (download.href !== "#") {
+        //     URL.revokeObjectURL(download.href);
+        // }
+        // download.download = "image-data.bin";
+        // download.href = url;
 
         render(gl);
     };
@@ -26,7 +26,7 @@ export default function main(gl) {
 
 function render(gl) {
     const program = getProgramInfo();
-    const { buffers, textureSprite: sprite } = program;
+    const { buffers } = program;
 
     gl.clearColor(0.15, 0.15, 0.15, 1.0); 
     gl.clearDepth(1.0);                 
@@ -73,13 +73,12 @@ function render(gl) {
         gl.activeTexture(gl.TEXTURE0 + slot);
         gl.bindTexture(gl.TEXTURE_2D, program.texture);
 
-        // const buffer = store.getState().scene.imageData;
-        const buffer = sprite._buffer;
+        const { imageWidth: width, imageHeight: height } = store.getState().scene;
+        const buffer = new Uint8Array(store.getState().scene.imageData);
 
         const level = 0;
         const internalFormat = gl.RGBA;
         const format = internalFormat;
-        const { width, height } = sprite;
         const border = 0;
         const type = gl.UNSIGNED_BYTE;
         gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, buffer);

@@ -1,4 +1,4 @@
-import store from './store';
+import store, { setImagePixel } from './store';
 import { screenToWorld } from "./camera";
 import { getProgramInfo } from "./programInfo";
 import { multiplyCameraScale } from "./store";
@@ -13,13 +13,14 @@ function setupInput(canvas) {
             height: 1
         });
         
-        const { textureWidth, textureHeight, textureSprite: sprite } = program;
+        const { textureWidth, textureHeight } = program;
 
         // Image will always be centred at (0, 0); test if the click was in that image
         if (
             (-textureWidth / 2 <= worldX && worldX <= textureWidth / 2) &&
             (-textureHeight / 2 <= worldY && worldY <= textureHeight / 2)
         ) {
+            const { imageWidth: width, imageHeight: height } = store.getState().scene;
             // Now find the pixel to paint
 
             // Right should be positive X
@@ -27,8 +28,8 @@ function setupInput(canvas) {
             // Down should be positive Y
             const localY = (textureHeight / 2) - worldY;
 
-            const pixelX = Math.floor(sprite.width * localX);
-            const pixelY = Math.floor(sprite.height * localY);
+            const pixelX = Math.floor(width * localX);
+            const pixelY = Math.floor(height * localY);
 
             const colorPicker = document.getElementById('color-picker');
             if (!colorPicker) {
@@ -36,8 +37,17 @@ function setupInput(canvas) {
             }
 
             const color = [...parseColorInput(colorPicker.value), 0xFF];
+            const color32 =
+                (color[0] << (0 * 8)) |
+                (color[1] << (1 * 8)) |
+                (color[2] << (2 * 8)) |
+                (color[3] << (3 * 8));
 
-            sprite.setPixel([pixelX, pixelY], color);
+            store.dispatch(setImagePixel({
+                xy: { x: pixelX, y: pixelY },
+                color: color32
+            }));
+
             program.update();
         }
     };

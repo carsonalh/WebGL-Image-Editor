@@ -16,7 +16,6 @@ export function screenToWorld([x, y], canvas, cameraInfo) {
 
 export function screenToWorldUnits([x, y], canvas, cameraInfo) {
     const scaleRatio = cameraInfo.height / canvas.height;
-    const aspectRatio = cameraInfo.width / cameraInfo.height;
     return [scaleRatio * x, -scaleRatio * y];
 }
 

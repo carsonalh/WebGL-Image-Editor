@@ -1,15 +1,31 @@
-import store, { setImagePixel } from './store';
-import { screenToWorld } from "./camera";
+import store, { addCameraPosition, setImagePixel, setMouseDown } from './store';
+import { screenToWorld, screenToWorldUnits } from "./camera";
 import { multiplyCameraScale } from "./store";
 
 function setupInput(canvas, program) {
-    canvas.onmousedown = (ev) => {
-        ev.preventDefault();
-        const [clickX, clickY] = [ev.offsetX, ev.offsetY];
-        const { cameraScale } = store.getState().scene;
+    // We want to disable the context menu when right clicking on the canvas.
+    // This should do the trick (thanks SO).
+    canvas.oncontextmenu = e => {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    canvas.onmousedown = e => {
+        e.preventDefault();
+
+        const SECONDARY_BUTTON = 2;
+        if (e.button == SECONDARY_BUTTON) {
+            store.dispatch(setMouseDown(true));
+            return;
+        }
+        
+        const [clickX, clickY] = [e.offsetX, e.offsetY];
+        const { cameraScale, cameraX, cameraY } = store.getState().scene;
         const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
             width: cameraScale * canvas.width / canvas.height,
-            height: cameraScale
+            height: cameraScale,
+            x: cameraX,
+            y: cameraY
         });
         
         const { textureWidth, textureHeight } = program;
@@ -53,11 +69,37 @@ function setupInput(canvas, program) {
         }
     };
 
-    canvas.onwheel = (ev) => {
-        ev.preventDefault();
+    canvas.onmousemove = e => {
+        const [deltaX, deltaY] = [e.movementX, e.movementY];
+        const { mouseDown } = store.getState().scene;
 
-        if (ev.deltaY !== 0) {
-            const direction = Math.sign(ev.deltaY);
+        const { cameraScale } = store.getState().scene;
+        const [moveX, moveY] = screenToWorldUnits([deltaX, deltaY], canvas, {
+            width: cameraScale * canvas.width / canvas.height,
+            height: cameraScale
+        });
+
+        if (mouseDown) {
+            store.dispatch(addCameraPosition({ x: moveX, y: moveY }));
+        }
+        program.update();
+    };
+
+    canvas.onmouseup = e => {
+        e.preventDefault();
+
+        const SECONDARY_BUTTON = 2;
+        if (e.button == SECONDARY_BUTTON) {
+            store.dispatch(setMouseDown(false));
+        }
+        program.update();
+    };
+
+    canvas.onwheel = e => {
+        e.preventDefault();
+
+        if (e.deltaY !== 0) {
+            const direction = Math.sign(e.deltaY);
             const scalePercentage = 1.00 + 0.07 * direction;
             store.dispatch(multiplyCameraScale(scalePercentage));
             program.update();

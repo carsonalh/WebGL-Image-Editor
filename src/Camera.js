@@ -11,20 +11,27 @@ export function screenToWorld([x, y], canvas, cameraInfo) {
 
     const mapX = createMapper(0, canvas.width, -cameraInfo.width / 2, cameraInfo.width / 2);
     const mapY = createMapper(0, canvas.height, cameraInfo.height / 2, -cameraInfo.height / 2);
-    return [mapX(x), mapY(y)];
+    return [mapX(x) - cameraInfo.x, mapY(y) - cameraInfo.y];
+}
+
+export function screenToWorldUnits([x, y], canvas, cameraInfo) {
+    const scaleRatio = cameraInfo.height / canvas.height;
+    const aspectRatio = cameraInfo.width / cameraInfo.height;
+    return [scaleRatio * x, -scaleRatio * y];
 }
 
 export function getCameraMatrix(cameraInfo) {
     const mat = mat4.create();
 
-    const left = - cameraInfo.scale * cameraInfo.aspectRatio / 2;
+    const left = -cameraInfo.scale * cameraInfo.aspectRatio / 2;
     const right = cameraInfo.scale * cameraInfo.aspectRatio / 2;
-    const bottom = - cameraInfo.scale * 1 / 2;
+    const bottom = -cameraInfo.scale * 1 / 2;
     const top = cameraInfo.scale * 1 / 2;
     const near = -1;
     const far = 1;
 
     mat4.ortho(mat, left, right, bottom, top, near, far);
+    mat4.translate(mat, mat, [cameraInfo.x, cameraInfo.y, 0])
 
     return mat;
 }

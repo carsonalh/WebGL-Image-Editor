@@ -6,6 +6,7 @@ const sceneSlice = createSlice({
         cameraX: 0,
         cameraY: 0,
         cameraScale: 1,
+        mouseDown: false,
         imageWidth: 32,
         imageHeight: 32,
         imageData: new Array(4 * 32 * 32).fill(0xFF),
@@ -27,6 +28,9 @@ const sceneSlice = createSlice({
         multiplyCameraScale(state, action) {
             state.cameraScale *= action.payload;
         },
+        setMouseDown(state, action) {
+            state.mouseDown = action.payload;
+        },
         setImagePixel(state, action) {
             const { x, y } = action.payload.xy;
             const width = state.imageWidth;
@@ -46,6 +50,7 @@ export const {
     addCameraPosition,
     setCameraScale,
     multiplyCameraScale,
+    setMouseDown,
     setImagePixel
 } = sceneSlice.actions;
 

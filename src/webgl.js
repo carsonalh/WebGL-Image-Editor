@@ -171,7 +171,9 @@ export function render(gl, program) {
 
     const projectionMatrix = getCameraMatrix({
         scale: store.getState().scene.cameraScale,
-        aspectRatio: gl.canvas.width / gl.canvas.height
+        aspectRatio: gl.canvas.width / gl.canvas.height,
+        x: store.getState().scene.cameraX,
+        y: store.getState().scene.cameraY
     });
 
     gl.uniformMatrix4fv(program.uniformLocations.projectionMatrix, false, projectionMatrix);

@@ -6,7 +6,7 @@ export default function main(gl: WebGLRenderingContext) {
     const program = createProgram(gl);
     program.update = () => render(gl, program);
     // Sets up the input hooks
-    setupInput(gl.canvas, program);
+    setupInput(gl.canvas as HTMLCanvasElement, program);
     // Do the first render; all renders after this are done by program.update()
     program.update();
 }

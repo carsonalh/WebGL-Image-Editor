@@ -1,5 +1,8 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 
+const INITIAL_WIDTH = 32;
+const INITIAL_HEIGHT = 32;
+
 const sceneSlice = createSlice({
     name: 'scene',
     initialState: {
@@ -7,9 +10,9 @@ const sceneSlice = createSlice({
         cameraY: 0,
         cameraScale: 1,
         mouseDown: false,
-        imageWidth: 32,
-        imageHeight: 32,
-        imageData: new Array<number>(4 * 32 * 32).fill(0xFF),
+        imageWidth: INITIAL_WIDTH,
+        imageHeight: INITIAL_HEIGHT,
+        imageData: new Array<number>(4 * INITIAL_WIDTH * INITIAL_HEIGHT).fill(0xFF),
     },
     reducers: {
         setCameraPosition(state, action) {

@@ -9,7 +9,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     canvas.oncontextmenu = e => {
         e.preventDefault();
         e.stopPropagation();
-    }
+    };
     
     canvas.onmousedown = e => {
         e.preventDefault();

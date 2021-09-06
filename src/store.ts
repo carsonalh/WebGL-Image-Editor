@@ -9,7 +9,7 @@ const sceneSlice = createSlice({
         mouseDown: false,
         imageWidth: 32,
         imageHeight: 32,
-        imageData: new Array(4 * 32 * 32).fill(0xFF),
+        imageData: new Array<number>(4 * 32 * 32).fill(0xFF),
     },
     reducers: {
         setCameraPosition(state, action) {

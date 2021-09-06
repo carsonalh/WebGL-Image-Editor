@@ -1,8 +1,9 @@
 import store, { addCameraPosition, setImagePixel, setMouseDown } from './store';
 import { screenToWorld, screenToWorldUnits } from "./camera";
 import { multiplyCameraScale } from "./store";
+import { Program } from './webgl';
 
-function setupInput(canvas, program) {
+function setupInput(canvas: HTMLCanvasElement, program: Program) {
     // We want to disable the context menu when right clicking on the canvas.
     // This should do the trick (thanks SO).
     canvas.oncontextmenu = e => {
@@ -22,6 +23,7 @@ function setupInput(canvas, program) {
         const [clickX, clickY] = [e.offsetX, e.offsetY];
         const { cameraScale, cameraX, cameraY } = store.getState().scene;
         const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
+            scale: cameraScale,
             width: cameraScale * canvas.width / canvas.height,
             height: cameraScale,
             x: cameraX,
@@ -76,7 +78,10 @@ function setupInput(canvas, program) {
         const { cameraScale } = store.getState().scene;
         const [moveX, moveY] = screenToWorldUnits([deltaX, deltaY], canvas, {
             width: cameraScale * canvas.width / canvas.height,
-            height: cameraScale
+            height: cameraScale,
+            scale: cameraScale,
+            x: store.getState().scene.cameraX,
+            y: store.getState().scene.cameraY,
         });
 
         if (mouseDown) {
@@ -112,7 +117,7 @@ function setupInput(canvas, program) {
     };
 }
 
-function parseColorInput(string) {
+function parseColorInput(string: string) {
     let m;
     if (m = string.match(/^#([0-9a-f]{6})$/i)[1]) {
         return [

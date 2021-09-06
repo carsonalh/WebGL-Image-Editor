@@ -27,7 +27,29 @@ void main() {
 }
 `;
 
-export function createProgram(gl) {
+export interface Program {
+    program: WebGLProgram;
+    attribLocations: {
+        vertexPosition: number;
+        texCoordPosition: number;
+    };
+    uniformLocations: {
+        projectionMatrix: WebGLUniformLocation;
+        modelViewMatrix: WebGLUniformLocation;
+        texture: WebGLUniformLocation;
+    };
+    buffers: {
+        position: WebGLBuffer;
+        texCoord: WebGLBuffer;
+        indices: WebGLBuffer;
+    };
+    texture: WebGLTexture;
+    textureWidth: number;
+    textureHeight: number;
+    update: () => any;
+}
+
+export function createProgram(gl: WebGLRenderingContext): Program {
     const shaderProgram = createShaderProgram(gl, vertexSource, fragmentSource);
     const buffers = createBuffers(gl);
     
@@ -45,12 +67,13 @@ export function createProgram(gl) {
         buffers,
         texture: gl.createTexture(),
         textureWidth: 1,
-        textureHeight: 1
+        textureHeight: 1,
+        update: null,
     };
 }
 
-function createShaderProgram(gl, vertexSource, fragmentSource) {
-    const createShader = (gl, type, source) => {
+function createShaderProgram(gl: WebGLRenderingContext, vertexSource: string, fragmentSource: string) {
+    const createShader = (gl: WebGLRenderingContext, type: number, source: string) => {
         const shader = gl.createShader(type);
 
         gl.shaderSource(shader, source);
@@ -81,7 +104,7 @@ function createShaderProgram(gl, vertexSource, fragmentSource) {
     return shaderProgram;
 }
 
-function createBuffers(gl) {
+function createBuffers(gl: WebGLRenderingContext) {
     const positionBuffer = gl.createBuffer();
     const texCoordBuffer = gl.createBuffer();
     const elementBuffer = gl.createBuffer();
@@ -134,7 +157,7 @@ function createBuffers(gl) {
     };
 }
 
-export function render(gl, program) {
+export function render(gl: WebGLRenderingContext, program: Program) {
     const { buffers } = program;
 
     gl.clearColor(0.15, 0.15, 0.15, 1.0); 
@@ -171,7 +194,8 @@ export function render(gl, program) {
 
     const projectionMatrix = getCameraMatrix({
         scale: store.getState().scene.cameraScale,
-        aspectRatio: gl.canvas.width / gl.canvas.height,
+        width: gl.canvas.width,
+        height: gl.canvas.height,
         x: store.getState().scene.cameraX,
         y: store.getState().scene.cameraY
     });

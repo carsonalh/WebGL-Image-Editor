@@ -1,7 +1,24 @@
 import { mat4 } from 'gl-matrix';
 
-export function screenToWorld([x, y], canvas, cameraInfo) {
-    const createMapper = (fromStart, fromEnd, toStart, toEnd) => x => {
+export interface CameraInfo {
+    width: number;
+    height: number;
+    scale: number;
+    x: number;
+    y: number;
+}
+
+export function screenToWorld(
+    [x, y]: [number, number],
+    canvas: HTMLCanvasElement,
+    cameraInfo: CameraInfo
+) {
+    const createMapper = (
+            fromStart: number,
+            fromEnd: number,
+            toStart: number,
+            toEnd: number
+        ) => (x: number) => {
         // Get where x is from fromStart (0) to fromEnd (1) as a percentage
         const fromPercent = (x - fromStart) / (fromEnd - fromStart);
         // Apply that percentage to the 'to' range
@@ -14,16 +31,22 @@ export function screenToWorld([x, y], canvas, cameraInfo) {
     return [mapX(x) - cameraInfo.x, mapY(y) - cameraInfo.y];
 }
 
-export function screenToWorldUnits([x, y], canvas, cameraInfo) {
+export function screenToWorldUnits(
+    [x, y]: [number, number],
+    canvas: HTMLCanvasElement,
+    cameraInfo: CameraInfo
+) {
     const scaleRatio = cameraInfo.height / canvas.height;
     return [scaleRatio * x, -scaleRatio * y];
 }
 
-export function getCameraMatrix(cameraInfo) {
+export function getCameraMatrix(cameraInfo: CameraInfo) {
     const mat = mat4.create();
 
-    const left = -cameraInfo.scale * cameraInfo.aspectRatio / 2;
-    const right = cameraInfo.scale * cameraInfo.aspectRatio / 2;
+    const aspectRatio = cameraInfo.width / cameraInfo.height;
+
+    const left = -cameraInfo.scale * aspectRatio / 2;
+    const right = cameraInfo.scale * aspectRatio / 2;
     const bottom = -cameraInfo.scale * 1 / 2;
     const top = cameraInfo.scale * 1 / 2;
     const near = -1;

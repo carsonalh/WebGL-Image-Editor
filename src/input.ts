@@ -48,7 +48,7 @@ function setupInput(canvas, program) {
             const pixelX = Math.floor(width * localX);
             const pixelY = Math.floor(height * localY);
 
-            const colorPicker = document.getElementById('color-picker');
+            const colorPicker = document.getElementById('color-picker') as HTMLInputElement;
             if (!colorPicker) {
                 throw new Error('The color picker element could not be found.');
             }

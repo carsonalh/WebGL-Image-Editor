@@ -117,7 +117,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     };
 }
 
-function parseColorInput(string: string) {
+export function parseColorInput(string: string) {
     let m;
     if (m = string.match(/^#([0-9a-f]{6})$/i)[1]) {
         return [

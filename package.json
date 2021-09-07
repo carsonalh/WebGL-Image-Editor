@@ -6,7 +6,8 @@
   "scripts": {
     "start": "npx webpack-dev-server --config ./webpack.config.js",
     "build": "npx webpack --config ./webpack.config.js",
-    "serve": "npx serve dist"
+    "serve": "npx serve dist",
+    "test": "npx jest --config jest.config.js"
   },
   "keywords": [],
   "author": "",
@@ -17,9 +18,11 @@
     "redux": "^4.1.1"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.1",
     "html-webpack-plugin": "^5.3.2",
     "jest": "^27.0.6",
     "serve": "^12.0.0",
+    "ts-jest": "^27.0.5",
     "ts-loader": "^9.2.5",
     "typescript": "^4.4.2",
     "webpack": "^5.51.1",

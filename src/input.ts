@@ -2,6 +2,7 @@ import store, { addCameraPosition, setImagePixel, setMouseDown } from './store';
 import { screenToWorld, screenToWorldUnits } from './camera';
 import { multiplyCameraScale } from './store';
 import { Program } from './webgl';
+import { Bmp } from './bmp';
 
 function setupInput(canvas: HTMLCanvasElement, program: Program) {
     // We want to disable the context menu when right clicking on the canvas.
@@ -120,7 +121,48 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
     const downloadButton = document.getElementById('image-download');
 
-    downloadButton.onclick = function (ev) {};
+    downloadButton.onclick = function (ev) {
+        // NOTE: Everything you see in this function is a horrible mess to just
+        // get the bare minimum working
+        // Do not ship or rely on anything you see here
+
+        const { imageWidth, imageHeight } = store.getState().scene;
+        const { imageData } = store.getState().scene;
+
+        const redChannel = new Uint8Array(imageWidth * imageHeight);
+        const blueChannel = new Uint8Array(imageWidth * imageHeight);
+        const greenChannel = new Uint8Array(imageWidth * imageHeight);
+
+        for (let y = 0; y < imageHeight; y++) {
+            for (let x = 0; x < imageWidth; x++) {
+                const px = y * imageWidth + x;
+
+                const red = imageData[4 * px + 0];
+                const green = imageData[4 * px + 1];
+                const blue = imageData[4 * px + 2];
+
+                blueChannel[px] = blue;
+                greenChannel[px] = green;
+                redChannel[px] = red;
+            }
+        }
+
+        const bmp = Bmp.create({
+            width: 32,
+            height: 32,
+            redChannel,
+            blueChannel,
+            greenChannel,
+        });
+
+        const blob = new Blob([bmp.toBuffer()]);
+        const url = URL.createObjectURL(blob);
+
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = 'image.bmp';
+        a.click();
+    };
 }
 
 export function parseColorInput(string: string) {

@@ -52,16 +52,28 @@ export interface Program {
 export function createProgram(gl: WebGLRenderingContext): Program {
     const shaderProgram = createShaderProgram(gl, vertexSource, fragmentSource);
     const buffers = createBuffers(gl);
-    
+
     return {
         program: shaderProgram,
         attribLocations: {
-            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-            texCoordPosition: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
+            vertexPosition: gl.getAttribLocation(
+                shaderProgram,
+                'aVertexPosition'
+            ),
+            texCoordPosition: gl.getAttribLocation(
+                shaderProgram,
+                'aTextureCoord'
+            ),
         },
         uniformLocations: {
-            projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-            modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+            projectionMatrix: gl.getUniformLocation(
+                shaderProgram,
+                'uProjectionMatrix'
+            ),
+            modelViewMatrix: gl.getUniformLocation(
+                shaderProgram,
+                'uModelViewMatrix'
+            ),
             texture: gl.getUniformLocation(shaderProgram, 'uSampler'),
         },
         buffers,
@@ -72,15 +84,25 @@ export function createProgram(gl: WebGLRenderingContext): Program {
     };
 }
 
-function createShaderProgram(gl: WebGLRenderingContext, vertexSource: string, fragmentSource: string) {
-    const createShader = (gl: WebGLRenderingContext, type: number, source: string) => {
+function createShaderProgram(
+    gl: WebGLRenderingContext,
+    vertexSource: string,
+    fragmentSource: string
+) {
+    const createShader = (
+        gl: WebGLRenderingContext,
+        type: number,
+        source: string
+    ) => {
         const shader = gl.createShader(type);
 
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
 
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            throw new Error(`Could not compile a shader:\n${gl.getShaderInfoLog(shader)}`);
+            throw new Error(
+                `Could not compile a shader:\n${gl.getShaderInfoLog(shader)}`
+            );
         }
 
         return shader;
@@ -95,7 +117,11 @@ function createShaderProgram(gl: WebGLRenderingContext, vertexSource: string, fr
     gl.linkProgram(shaderProgram);
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        throw new Error(`Could not create the shader program:\n${gl.getProgramInfoLog(shaderProgram)}`);
+        throw new Error(
+            `Could not create the shader program:\n${gl.getProgramInfoLog(
+                shaderProgram
+            )}`
+        );
     }
 
     gl.deleteShader(vertexShader);
@@ -108,18 +134,21 @@ function createBuffers(gl: WebGLRenderingContext) {
     const positionBuffer = gl.createBuffer();
     const texCoordBuffer = gl.createBuffer();
     const elementBuffer = gl.createBuffer();
-    
+
     {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
 
         const indices = [
             // Assumes four elements of quad are defined clockwise, starting
             // from the top left
-            0, 1, 2,
-            0, 2, 3,            
+            0, 1, 2, 0, 2, 3,
         ];
 
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(indices), gl.STATIC_DRAW);
+        gl.bufferData(
+            gl.ELEMENT_ARRAY_BUFFER,
+            new Int16Array(indices),
+            gl.STATIC_DRAW
+        );
     }
 
     {
@@ -127,13 +156,14 @@ function createBuffers(gl: WebGLRenderingContext) {
 
         const positions = [
             // Going clockwise
-            -0.5, 0.5,
-            0.5, 0.5,
-            0.5, -0.5,
-            -0.5, -0.5,
+            -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5,
         ];
 
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(positions),
+            gl.STATIC_DRAW
+        );
     }
 
     {
@@ -141,33 +171,34 @@ function createBuffers(gl: WebGLRenderingContext) {
 
         const texCoords = [
             // Assuming positive y goes downwards
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
+            0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
         ];
 
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(texCoords),
+            gl.STATIC_DRAW
+        );
     }
 
     return {
         position: positionBuffer,
         texCoord: texCoordBuffer,
-        indices: elementBuffer
+        indices: elementBuffer,
     };
 }
 
 export function render(gl: WebGLRenderingContext, program: Program) {
     const { buffers } = program;
 
-    gl.clearColor(0.15, 0.15, 0.15, 1.0); 
-    gl.clearDepth(1.0);                 
+    gl.clearColor(0.15, 0.15, 0.15, 1.0);
+    gl.clearDepth(1.0);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const modelViewMatrix = mat4.create();
     mat4.identity(modelViewMatrix);
-    
+
     {
         const numComponents = 2;
         const type = gl.FLOAT;
@@ -175,10 +206,17 @@ export function render(gl: WebGLRenderingContext, program: Program) {
         const stride = 0;
         const offset = 0;
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-        gl.vertexAttribPointer(program.attribLocations.vertexPosition, numComponents, type, normalize, stride, offset);
+        gl.vertexAttribPointer(
+            program.attribLocations.vertexPosition,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset
+        );
         gl.enableVertexAttribArray(program.attribLocations.vertexPosition);
     }
-    
+
     {
         const numComponents = 2;
         const type = gl.FLOAT;
@@ -186,10 +224,17 @@ export function render(gl: WebGLRenderingContext, program: Program) {
         const stride = 0;
         const offset = 0;
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texCoord);
-        gl.vertexAttribPointer(program.attribLocations.texCoordPosition, numComponents, type, normalize, stride, offset);
+        gl.vertexAttribPointer(
+            program.attribLocations.texCoordPosition,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset
+        );
         gl.enableVertexAttribArray(program.attribLocations.texCoordPosition);
     }
-    
+
     gl.useProgram(program.program);
 
     const projectionMatrix = getCameraMatrix({
@@ -197,18 +242,27 @@ export function render(gl: WebGLRenderingContext, program: Program) {
         width: gl.canvas.width,
         height: gl.canvas.height,
         x: store.getState().scene.cameraX,
-        y: store.getState().scene.cameraY
+        y: store.getState().scene.cameraY,
     });
 
-    gl.uniformMatrix4fv(program.uniformLocations.projectionMatrix, false, projectionMatrix);
-    gl.uniformMatrix4fv(program.uniformLocations.modelViewMatrix, false, modelViewMatrix);
-    
+    gl.uniformMatrix4fv(
+        program.uniformLocations.projectionMatrix,
+        false,
+        projectionMatrix
+    );
+    gl.uniformMatrix4fv(
+        program.uniformLocations.modelViewMatrix,
+        false,
+        modelViewMatrix
+    );
+
     {
         const slot = 0;
         gl.activeTexture(gl.TEXTURE0 + slot);
         gl.bindTexture(gl.TEXTURE_2D, program.texture);
 
-        const { imageWidth: width, imageHeight: height } = store.getState().scene;
+        const { imageWidth: width, imageHeight: height } =
+            store.getState().scene;
         const buffer = new Uint8Array(store.getState().scene.imageData);
 
         const level = 0;
@@ -216,7 +270,17 @@ export function render(gl: WebGLRenderingContext, program: Program) {
         const format = internalFormat;
         const border = 0;
         const type = gl.UNSIGNED_BYTE;
-        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, format, type, buffer);
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            level,
+            internalFormat,
+            width,
+            height,
+            border,
+            format,
+            type,
+            buffer
+        );
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);

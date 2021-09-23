@@ -1,7 +1,9 @@
 import main from './main';
 
 window.onload = function () {
-    const canvas = document.querySelector('canvas#gl-canvas') as HTMLCanvasElement;
+    const canvas = document.querySelector(
+        'canvas#gl-canvas'
+    ) as HTMLCanvasElement;
     const gl = canvas.getContext('webgl');
 
     // If 'gl' is null, then the browser does not support WebGL

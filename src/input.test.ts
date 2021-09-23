@@ -9,5 +9,5 @@ it('can parse white', () => {
 });
 
 it('can parse an inbetween color', () => {
-    expect(parseColorInput('#FFC0DE')).toEqual([0xFF, 0xC0, 0xDE]);
+    expect(parseColorInput('#FFC0DE')).toEqual([0xff, 0xc0, 0xde]);
 });

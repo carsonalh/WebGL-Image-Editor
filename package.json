@@ -7,7 +7,7 @@
     "start": "npx webpack-dev-server --config ./webpack.config.js",
     "build": "npx webpack --config ./webpack.config.js",
     "serve": "npx serve dist",
-    "test": "npx jest --config jest.config.js"
+    "test": "npx jest --config jest.config.js --watchAll"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^1.6.1",
     "gl-matrix": "^3.3.0",
+    "prettier": "^2.4.1",
     "redux": "^4.1.1"
   },
   "devDependencies": {

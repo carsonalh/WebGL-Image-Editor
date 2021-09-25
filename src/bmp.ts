@@ -20,6 +20,105 @@ class Bmp {
     }
 
     /**
+     * Reads a bmp file into a `Bmp` object.
+     */
+    public static fromBmpFile(bmpData: ArrayBuffer): Bmp {
+        const bytes = new Uint8Array(bmpData);
+
+        if (!bmpData.byteLength) {
+            throw new Error('Cannot read an empty BMP file');
+        }
+
+        const COMBINED_HEADER_SIZE = 0x36;
+
+        if (bmpData.byteLength < COMBINED_HEADER_SIZE) {
+            throw new Error(
+                'Malformed BMP file: not enough information to store the file headers'
+            );
+        }
+
+        const firstTwoBytes = (bytes[0x01] << 8) | (bytes[0x00] << 0);
+
+        // If we don't see the 'BM' characters, it doesn't have the signature we recognise
+        if (firstTwoBytes !== 0x4d42) {
+            throw new Error(
+                'The given file does not have the BMP file signature'
+            );
+        }
+
+        const statedFileLength =
+            (bytes[0x02] << (8 * 0)) |
+            (bytes[0x03] << (8 * 1)) |
+            (bytes[0x04] << (8 * 2)) |
+            (bytes[0x05] << (8 * 3));
+
+        if (statedFileLength !== bytes.length) {
+            throw new Error(
+                'The BMP file does not state its own size correctly'
+            );
+        }
+
+        const statedImageDataOffset =
+            (bytes[0x0a] << (8 * 0)) |
+            (bytes[0x0b] << (8 * 1)) |
+            (bytes[0x0c] << (8 * 2)) |
+            (bytes[0x0d] << (8 * 3));
+
+        const ONLY_SUPPORTED_COMBINED_HEADER_SIZE = 0x36;
+
+        if (statedImageDataOffset !== ONLY_SUPPORTED_COMBINED_HEADER_SIZE) {
+            throw new Error(
+                'Image data for BMP must start at byte 0x36; nothing else is supported'
+            );
+        }
+
+        const bitsPerPixel =
+            (bytes[0x1c] << (8 * 0)) | (bytes[0x1d] << (8 * 1));
+
+        if (bitsPerPixel !== 24) {
+            throw new Error(
+                'Only 24 bits per pixel (bpp) is supported for BMP files'
+            );
+        }
+
+        const compressionMethod =
+            (bytes[0x1e] << (8 * 0)) | (bytes[0x1f] << (8 * 1));
+
+        const BI_RGB = 0;
+
+        if (compressionMethod !== BI_RGB) {
+            throw new Error(
+                'Only BI_RGB compression is supported for BMP files'
+            );
+        }
+
+        const statedImageDataSize = bytes.length - COMBINED_HEADER_SIZE;
+        const statedWidth =
+            (bytes[0x12] << (0 * 8)) |
+            (bytes[0x13] << (1 * 8)) |
+            (bytes[0x14] << (2 * 8)) |
+            (bytes[0x15] << (3 * 8));
+        const statedHeight =
+            (bytes[0x16] << (0 * 8)) |
+            (bytes[0x17] << (1 * 8)) |
+            (bytes[0x18] << (2 * 8)) |
+            (bytes[0x19] << (3 * 8));
+
+        const expectedImageDataSize = Bmp.create({
+            width: statedWidth,
+            height: statedHeight,
+        }).getImageDataSizeInBytes();
+
+        if (expectedImageDataSize !== statedImageDataSize) {
+            throw new Error(
+                'The stated image data size differs from the expected size for this BMP implementation'
+            );
+        }
+
+        return null;
+    }
+
+    /**
      * Writes an amount of bytes from a given number value to a Uint8Array.
      *
      * Note that if a number that does not fit into the amount of bytes is

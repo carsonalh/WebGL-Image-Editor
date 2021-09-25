@@ -100,6 +100,10 @@ class Bmp {
         byteArray[0x01] = 0x4d;
         // Write the size of the entire file to the file header
         Bmp.writeLittleEndianBytes(byteArray, buffer.byteLength, 0x02, 4);
+        // Write the address of the beginning of the image data, which happens
+        // to be the size of the header because there is no extra metadata (like
+        // colour palettes) being stored
+        Bmp.writeLittleEndianBytes(byteArray, 0x36, 0x0a, 4);
 
         // WRITE THE DIB HEADER
         // Write 40 decimal (0x28) (the size of the dib header) to the start of the dib header

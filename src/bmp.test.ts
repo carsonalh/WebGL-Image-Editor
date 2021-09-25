@@ -61,6 +61,15 @@ describe('bmp with default options', () => {
         expect(byteArray[0x20]).toEqual(0x00);
         expect(byteArray[0x21]).toEqual(0x00);
     });
+
+    it('writes 0x36 as the starting address of the image data', () => {
+        // All that is supported, in terms of headers is BITMAPINFOHEADER
+        // with no extra data; hence this 4-byte field must equal 0x36
+        expect(byteArray[0x0a]).toEqual(0x36);
+        expect(byteArray[0x0b]).toEqual(0x00);
+        expect(byteArray[0x0c]).toEqual(0x00);
+        expect(byteArray[0x0d]).toEqual(0x00);
+    });
 });
 
 describe('bmp image of size 2 x 2', () => {

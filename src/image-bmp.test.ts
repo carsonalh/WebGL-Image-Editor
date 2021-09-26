@@ -1,9 +1,19 @@
-import { Bmp } from './bmp';
+import { Bmp, BmpImage } from './image-bmp';
 
 describe('write', () => {
     describe('bmp with default options', () => {
-        const bmp = Bmp.create();
-        const buffer = bmp.toBuffer();
+        const WIDTH = 0,
+            HEIGHT = 0;
+
+        const bmp: BmpImage = {
+            width: WIDTH,
+            height: HEIGHT,
+            redChannel: new Uint8Array(WIDTH * HEIGHT).buffer,
+            greenChannel: new Uint8Array(WIDTH * HEIGHT).buffer,
+            blueChannel: new Uint8Array(WIDTH * HEIGHT).buffer,
+            alphaChannel: new Uint8Array(WIDTH * HEIGHT).buffer,
+        };
+        const buffer = Bmp.write(bmp);
         const byteArray = new Uint8Array(buffer);
 
         it('creates an array large enough for the file header and the DIB header', () => {
@@ -73,12 +83,12 @@ describe('write', () => {
         });
     });
 
-    describe('bmp image of size 2 x 2', () => {
+    describe('bmp image of size 2x2', () => {
         const bmp = Bmp.create({
             width: 2,
             height: 2,
         });
-        const buffer = bmp.toBuffer();
+        const buffer = Bmp.write(bmp);
         const byteArray = new Uint8Array(buffer);
 
         it('pads 6 bytes of color data to 8 (4 byte alignment per row)', () => {
@@ -99,7 +109,7 @@ describe('write', () => {
             width: 0x100,
             height: 0x100,
         });
-        const buffer = bmp.toBuffer();
+        const buffer = Bmp.write(bmp);
         const byteArray = new Uint8Array(buffer);
 
         it('can store the width and height in the DIB header', () => {
@@ -133,11 +143,11 @@ describe('write', () => {
         const bmp = Bmp.create({
             width: 2,
             height: 2,
-            redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]),
-            blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]),
-            greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]),
+            blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]).buffer,
+            greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]).buffer,
+            redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]).buffer,
         });
-        const buffer = bmp.toBuffer();
+        const buffer = Bmp.write(bmp);
         const byteArray = new Uint8Array(buffer);
 
         it('can write the image from wikipedia to bmp', () => {
@@ -172,25 +182,27 @@ describe('write', () => {
 describe('read', () => {
     describe('verify', () => {
         it('throws error for an empty file', () => {
-            expect(() => Bmp.fromBmpFile(new ArrayBuffer(0))).toThrowError();
+            expect(() => Bmp.read(new ArrayBuffer(0))).toThrowError();
         });
 
         const goodFile = new Uint8Array(
-            Bmp.create({
-                width: 0,
-                height: 0,
-            }).toBuffer()
+            Bmp.write(
+                Bmp.create({
+                    width: 0,
+                    height: 0,
+                })
+            )
         );
 
         it('does not throw for a good file', () => {
             const bytes = new Uint8Array(goodFile);
-            Bmp.fromBmpFile(bytes.buffer);
+            Bmp.read(bytes.buffer);
         });
 
         it('throws error if size cannot fit BITMAPINFOHEADER', () => {
             const MIN_SIZE = 0x36;
             const bytes = new Uint8Array(MIN_SIZE - 1);
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if file does not start with BM', () => {
@@ -200,7 +212,7 @@ describe('read', () => {
             bytes[0x00] = 0x00;
             bytes[0x01] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if the file does not state its own length correctly', () => {
@@ -212,7 +224,7 @@ describe('read', () => {
             bytes[0x04] = 0x00;
             bytes[0x05] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if starting address is not directly after header (at address 0x36)', () => {
@@ -224,7 +236,7 @@ describe('read', () => {
             bytes[0x0c] = 0x00;
             bytes[0x0d] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if header is not BITMAPINFOHEADER (size === 40, 0x28)', () => {
@@ -236,7 +248,7 @@ describe('read', () => {
             bytes[0x0c] = 0x00;
             bytes[0x0d] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if the bits per pixel (bpp) is not 24', () => {
@@ -245,7 +257,7 @@ describe('read', () => {
             bytes[0x1c] = 0x20; // 32 in decimal
             bytes[0x1d] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if the compression method is not BI_RGB (=== 0)', () => {
@@ -257,12 +269,12 @@ describe('read', () => {
             bytes[0x20] = 0x00;
             bytes[0x21] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
         it('throws error if there are an incorrect amount of bytes to store the image data', () => {
             // A good buffer with a blank BMP-format image
-            const buffer = Bmp.create({ width: 2, height: 2 }).toBuffer();
+            const buffer = Bmp.write(Bmp.create({ width: 2, height: 2 }));
             // Copy the good array into this bad one
             const bytes = new Uint8Array(
                 buffer.slice(0, buffer.byteLength - 2)
@@ -274,73 +286,83 @@ describe('read', () => {
             bytes[0x04] = 0x00;
             bytes[0x05] = 0x00;
 
-            expect(() => Bmp.fromBmpFile(bytes.buffer)).toThrowError();
+            expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
     });
 
     describe('parse', () => {
         it('successfully reads a 1-bytes width and height', () => {
-            let buffer = Bmp.create({
-                width: 32,
-                height: 32,
-            }).toBuffer();
+            let buffer = Bmp.write(
+                Bmp.create({
+                    width: 32,
+                    height: 32,
+                })
+            );
 
-            let parsedBmp = Bmp.fromBmpFile(buffer);
+            let parsedBmp = Bmp.read(buffer);
 
             expect(parsedBmp.width).toEqual(32);
             expect(parsedBmp.height).toEqual(32);
 
-            buffer = Bmp.create({
-                width: 16,
-                height: 16,
-            }).toBuffer();
+            buffer = Bmp.write(
+                Bmp.create({
+                    width: 16,
+                    height: 16,
+                })
+            );
 
-            parsedBmp = Bmp.fromBmpFile(buffer);
+            parsedBmp = Bmp.read(buffer);
             expect(parsedBmp.width).toEqual(16);
             expect(parsedBmp.height).toEqual(16);
 
-            buffer = Bmp.create({
-                width: 16,
-                height: 8,
-            }).toBuffer();
+            buffer = Bmp.write(
+                Bmp.create({
+                    width: 16,
+                    height: 8,
+                })
+            );
 
-            parsedBmp = Bmp.fromBmpFile(buffer);
+            parsedBmp = Bmp.read(buffer);
             expect(parsedBmp.width).toEqual(16);
             expect(parsedBmp.height).toEqual(8);
         });
 
         it('successfully reads multi-byte width and height', () => {
-            const buffer = Bmp.create({
-                width: 0x200,
-                height: 0x200,
-            }).toBuffer();
+            const buffer = Bmp.write(
+                Bmp.create({
+                    width: 0x200,
+                    height: 0x200,
+                })
+            );
 
-            const parsedBmp = Bmp.fromBmpFile(buffer);
+            const parsedBmp = Bmp.read(buffer);
 
             expect(parsedBmp.width).toEqual(0x200);
             expect(parsedBmp.height).toEqual(0x200);
         });
 
-        it('can read in the 2 x 2 wikipedia image', () => {
-            const buffer = Bmp.create({
-                width: 2,
-                height: 2,
-                redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]),
-                greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]),
-                blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]),
-            }).toBuffer();
+        it('can read in the 2x2 wikipedia image', () => {
+            const buffer = Bmp.write(
+                Bmp.create({
+                    width: 2,
+                    height: 2,
+                    redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]),
+                    greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]),
+                    blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]),
+                })
+            );
 
-            const bmp = Bmp.fromBmpFile(buffer);
+            const bmp = Bmp.read(buffer);
 
             expect(bmp.width).toEqual(2);
             expect(bmp.height).toEqual(2);
-            expect(Array.from(bmp.redChannel)).toEqual([
+            expect(Array.from(new Uint8Array(bmp.redChannel))).toEqual([
                 0xff, 0xff, 0x00, 0x00,
             ]);
-            expect(Array.from(bmp.greenChannel)).toEqual([
+            expect(Array.from(new Uint8Array(bmp.greenChannel))).toEqual([
                 0x00, 0xff, 0x00, 0xff,
             ]);
-            expect(Array.from(bmp.blueChannel)).toEqual([
+            expect(Array.from(new Uint8Array(bmp.blueChannel))).toEqual([
                 0x00, 0xff, 0xff, 0x00,
             ]);
         });

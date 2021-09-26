@@ -2,7 +2,7 @@ import store, { addCameraPosition, setImagePixel, setMouseDown } from './store';
 import { screenToWorld, screenToWorldUnits } from './camera';
 import { multiplyCameraScale } from './store';
 import { Program } from './webgl';
-import { Bmp } from './bmp';
+import { Bmp } from './image-bmp';
 
 function setupInput(canvas: HTMLCanvasElement, program: Program) {
     // We want to disable the context menu when right clicking on the canvas.
@@ -150,12 +150,12 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         const bmp = Bmp.create({
             width: 32,
             height: 32,
-            redChannel,
-            blueChannel,
-            greenChannel,
+            redChannel: redChannel.buffer,
+            blueChannel: blueChannel.buffer,
+            greenChannel: greenChannel.buffer,
         });
 
-        const blob = new Blob([bmp.toBuffer()]);
+        const blob = new Blob([Bmp.write(bmp)]);
         const url = URL.createObjectURL(blob);
 
         let a = document.createElement('a');

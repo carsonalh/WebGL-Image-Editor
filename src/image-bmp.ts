@@ -164,11 +164,14 @@ const Bmp: BmpImageSerializer = {
         writeLittleEndianBytes(byteArray, 24, 0x1c, 2);
 
         const bytesPerRow = getNumBytesPerRow(width, height);
-        const HEADER_SIZE = 0x36;
 
         const blueChannelBytes = new Uint8Array(image.blueChannel);
         const greenChannelBytes = new Uint8Array(image.greenChannel);
         const redChannelBytes = new Uint8Array(image.redChannel);
+
+        const HEADER_SIZE = 0x36;
+        const BITS_PER_PIXEL = 24;
+        const BYTES_PER_PIXEL = BITS_PER_PIXEL / 8;
 
         // Write all the image data to the image
         for (let y = 0; y < height; y++) {
@@ -177,10 +180,16 @@ const Bmp: BmpImageSerializer = {
             // Note that since all the bytes are zero by default, all the
             // padding should work itself out
 
+            // The BMP file format requires that y be positive in the up
+            // direction, whereas our `Image` interface requires that it be
+            // positive in the "down" direction
+            const yUpPositive = height - 1 - y;
+
             for (let x = 0; x < width; x++) {
-                const BITS_PER_PIXEL = 24;
-                const BYTES_PER_PIXEL = BITS_PER_PIXEL / 8;
-                const px = HEADER_SIZE + bytesPerRow * y + BYTES_PER_PIXEL * x;
+                const px =
+                    HEADER_SIZE +
+                    bytesPerRow * yUpPositive +
+                    BYTES_PER_PIXEL * x;
                 byteArray[px + 0] = blueChannelBytes[y * width + x];
                 byteArray[px + 1] = greenChannelBytes[y * width + x];
                 byteArray[px + 2] = redChannelBytes[y * width + x];
@@ -299,8 +308,15 @@ const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
     // Iterate y first so the pixels are accessed sequentially; it makes
     // debugging easier
     for (let y = 0; y < height; y++) {
+        // The BMP file format requires that y be positive in the up
+        // direction, whereas our `Image` interface requires that it be
+        // positive in the "down" direction
+        const yUpPositive = height - 1 - y;
+
         for (let x = 0; x < width; x++) {
-            const px = IMAGE_DATA_START + numBytesPerRow * y + 3 * x;
+            // Read the pixel from y-positive = down
+            const px = IMAGE_DATA_START + numBytesPerRow * yUpPositive + 3 * x;
+            // And write it as y-positive = up
             blueChannel[y * width + x] = bytes[px + 0];
             greenChannel[y * width + x] = bytes[px + 1];
             redChannel[y * width + x] = bytes[px + 2];

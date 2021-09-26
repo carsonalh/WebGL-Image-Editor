@@ -143,15 +143,19 @@ describe('write', () => {
         const bmp = Bmp.create({
             width: 2,
             height: 2,
-            blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]).buffer,
+            redChannel: new Uint8Array([0x00, 0x00, 0xff, 0xff]).buffer,
             greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]).buffer,
-            redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]).buffer,
+            blueChannel: new Uint8Array([0xff, 0x00, 0x00, 0xff]).buffer,
         });
         const buffer = Bmp.write(bmp);
         const byteArray = new Uint8Array(buffer);
 
         it('can write the image from wikipedia to bmp', () => {
-            // Should be written as BGR
+            // Pixel format should be written as BGR
+
+            // BMP requires row-major as does our `Image` interface, but
+            // requires that y = 0 is the bottom-most row of pixels in the
+            // image, while ours requires that y = 0 is the top-most row
 
             // (0, 1)
             expect(byteArray[0x36]).toEqual(0x00);
@@ -346,9 +350,9 @@ describe('read', () => {
                 Bmp.create({
                     width: 2,
                     height: 2,
-                    redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]),
+                    redChannel: new Uint8Array([0x00, 0x00, 0xff, 0xff]),
                     greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]),
-                    blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]),
+                    blueChannel: new Uint8Array([0xff, 0x00, 0x00, 0xff]),
                 })
             );
 
@@ -357,13 +361,13 @@ describe('read', () => {
             expect(bmp.width).toEqual(2);
             expect(bmp.height).toEqual(2);
             expect(Array.from(new Uint8Array(bmp.redChannel))).toEqual([
-                0xff, 0xff, 0x00, 0x00,
+                0x00, 0x00, 0xff, 0xff,
             ]);
             expect(Array.from(new Uint8Array(bmp.greenChannel))).toEqual([
                 0x00, 0xff, 0x00, 0xff,
             ]);
             expect(Array.from(new Uint8Array(bmp.blueChannel))).toEqual([
-                0x00, 0xff, 0xff, 0x00,
+                0xff, 0x00, 0x00, 0xff,
             ]);
         });
     });

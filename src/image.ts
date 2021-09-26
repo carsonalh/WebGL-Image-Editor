@@ -1,18 +1,22 @@
 /**
  * Represents an abstract image that can be read from or written to.
+ *
+ * Note that all arrays of image data (including channels) should be in
+ * row-major format, with y = 0 as the top row of the image and y = `height` - 1
+ * as the bottom, a.k.a. y-positive = down.
  */
 export interface Image {
     /** The width of the image in pixels. */
     width: number;
     /** The height of the image in pixels. */
     height: number;
-    /** The red channel of the image. */
+    /** The red channel of the image: row-major, y-positive = down. */
     redChannel: ArrayBuffer;
-    /** The green channel of the image. */
+    /** The green channel of the image: row-major, y-positive = down. */
     greenChannel: ArrayBuffer;
-    /** The blue channel of the image. */
+    /** The blue channel of the image: row-major, y-positive = down. */
     blueChannel: ArrayBuffer;
-    /** The alpha channel of the image. */
+    /** The alpha channel of the image: row-major, y-positive = down. */
     alphaChannel: ArrayBuffer;
 }
 

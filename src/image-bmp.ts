@@ -156,6 +156,18 @@ const enum BitmapFileHeaderAddress {
 }
 
 /**
+ * Sizes of all the data in the bitmap file header, in bytes.
+ */
+const enum BitmapFileHeaderSize {
+    /** In this bitmap implementation, must be "BM". */
+    SIGNATURE = 2,
+    /** The size of this bitmap file. */
+    FILE_SIZE = 4,
+    /** The offset of the image data in this file. */
+    IMAGE_DATA_OFFSET = 4,
+}
+
+/**
  * Contains a list of relative addresses for data inside the BITMAPINFOHEADER.
  *
  * If only this were written in C with its beautiful structs and pointer
@@ -179,6 +191,29 @@ const enum BitmapInfoHeaderAddress {
      * @see {BitmapCompressionMethod}
      */
     COMPRESSION_METHOD = 0x10,
+}
+
+/**
+ * Size of all the members in the BITMAPINFOHEADER structure, in bytes.
+ */
+const enum BitmapInfoHeaderSize {
+    /** The size of this header. Must have value 0x28. */
+    SIZE = 4,
+    /** The width of the image, in pixels. */
+    WIDTH = 4,
+    /** The height of the image, in pixels. */
+    HEIGHT = 4,
+    /** Not sure what txhis is the for, but the spec said the value "must be 1". */
+    COLOR_PLANES = 2,
+    /** Bpp of this image. */
+    BITS_PER_PIXEL = 2,
+    /**
+     * An enum of the possible compression methods as defined by the spec (only
+     * BI_RGB supported here).
+     *
+     * @see {BitmapCompressionMethod}
+     */
+    COMPRESSION_METHOD = 4,
 }
 
 /**
@@ -301,13 +336,10 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
         );
     }
 
-    // TODO: Give names to the magic numbers that denote the number of bytes for
-    // each of these elements being read/verified; for _now_, this should work
-
     const signature = readLittleEndianBytes(
         bytes,
         BitmapFileHeaderAddress.SIGNATURE,
-        2
+        BitmapFileHeaderSize.SIGNATURE
     );
 
     // If we don't see the "BM" characters, it doesn't have the signature we recognise
@@ -318,7 +350,7 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
     const statedFileLength = readLittleEndianBytes(
         bytes,
         BitmapFileHeaderAddress.FILE_SIZE,
-        4
+        BitmapFileHeaderSize.FILE_SIZE
     );
 
     if (statedFileLength !== buffer.byteLength) {
@@ -328,7 +360,7 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
     const statedImageDataOffset = readLittleEndianBytes(
         bytes,
         BitmapFileHeaderAddress.IMAGE_DATA_OFFSET,
-        4
+        BitmapFileHeaderSize.IMAGE_DATA_OFFSET
     );
 
     const ONLY_SUPPORTED_COMBINED_HEADER_SIZE = 0x36;
@@ -345,7 +377,7 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
     const bitsPerPixel = readLittleEndianBytes(
         bytes,
         DIB_HEADER + BitmapInfoHeaderAddress.BITS_PER_PIXEL,
-        2
+        BitmapInfoHeaderSize.BITS_PER_PIXEL
     );
 
     if (bitsPerPixel !== 24) {
@@ -357,7 +389,7 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
     const compressionMethod = readLittleEndianBytes(
         bytes,
         DIB_HEADER + BitmapInfoHeaderAddress.COMPRESSION_METHOD,
-        2
+        BitmapInfoHeaderSize.COMPRESSION_METHOD
     );
 
     if (compressionMethod !== BitmapCompressionMethod.BI_RGB) {
@@ -368,12 +400,12 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
     const statedWidth = readLittleEndianBytes(
         bytes,
         DIB_HEADER + BitmapInfoHeaderAddress.WIDTH,
-        4
+        BitmapInfoHeaderSize.WIDTH
     );
     const statedHeight = readLittleEndianBytes(
         bytes,
         DIB_HEADER + BitmapInfoHeaderAddress.HEIGHT,
-        4
+        BitmapInfoHeaderSize.HEIGHT
     );
 
     const expectedImageDataSize = getImageDataSizeInBytes(
@@ -403,6 +435,8 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
 const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
     // Start by getting the offset of the image data in bytes
     const bytes = new Uint8Array(verifiedBmpData);
+    // TODO: We made a function to clean up this nonsense, use it here; that
+    // will also get rid of all these magic numbers
     const width =
         (bytes[0x12] << (8 * 0)) |
         (bytes[0x13] << (8 * 1)) |
@@ -414,6 +448,8 @@ const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
         (bytes[0x18] << (8 * 2)) |
         (bytes[0x19] << (8 * 3));
 
+    // TODO: Read this from the file; it'll make this parser that much more
+    // compatible
     const IMAGE_DATA_START = 0x36;
 
     const numBytesPerRow = getNumBytesPerRow(width, height);

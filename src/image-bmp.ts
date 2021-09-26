@@ -41,98 +41,9 @@ interface BmpImageSerializer extends ImageSerializer<BmpImage> {
 
 const Bmp: BmpImageSerializer = {
     read: buffer => {
-        const bytes = new Uint8Array(buffer);
-
-        if (!buffer.byteLength) {
-            throw new Error('Cannot read an empty BMP file');
-        }
-
-        const COMBINED_HEADER_SIZE = 0x36;
-
-        if (buffer.byteLength < COMBINED_HEADER_SIZE) {
-            throw new Error(
-                'Malformed BMP file: not enough information to store the file headers'
-            );
-        }
-
-        const firstTwoBytes = (bytes[0x01] << 8) | (bytes[0x00] << 0);
-
-        // If we don't see the 'BM' characters, it doesn't have the signature we recognise
-        if (firstTwoBytes !== 0x4d42) {
-            throw new Error(
-                'The given file does not have the BMP file signature'
-            );
-        }
-
-        const statedFileLength =
-            (bytes[0x02] << (8 * 0)) |
-            (bytes[0x03] << (8 * 1)) |
-            (bytes[0x04] << (8 * 2)) |
-            (bytes[0x05] << (8 * 3));
-
-        if (statedFileLength !== bytes.length) {
-            throw new Error(
-                'The BMP file does not state its own size correctly'
-            );
-        }
-
-        const statedImageDataOffset =
-            (bytes[0x0a] << (8 * 0)) |
-            (bytes[0x0b] << (8 * 1)) |
-            (bytes[0x0c] << (8 * 2)) |
-            (bytes[0x0d] << (8 * 3));
-
-        const ONLY_SUPPORTED_COMBINED_HEADER_SIZE = 0x36;
-
-        if (statedImageDataOffset !== ONLY_SUPPORTED_COMBINED_HEADER_SIZE) {
-            throw new Error(
-                'Image data for BMP must start at byte 0x36; nothing else is supported'
-            );
-        }
-
-        const bitsPerPixel =
-            (bytes[0x1c] << (8 * 0)) | (bytes[0x1d] << (8 * 1));
-
-        if (bitsPerPixel !== 24) {
-            throw new Error(
-                'Only 24 bits per pixel (bpp) is supported for BMP files'
-            );
-        }
-
-        const compressionMethod =
-            (bytes[0x1e] << (8 * 0)) | (bytes[0x1f] << (8 * 1));
-
-        const BI_RGB = 0;
-
-        if (compressionMethod !== BI_RGB) {
-            throw new Error(
-                'Only BI_RGB compression is supported for BMP files'
-            );
-        }
-
-        const statedImageDataSize = bytes.length - COMBINED_HEADER_SIZE;
-        const statedWidth =
-            (bytes[0x12] << (0 * 8)) |
-            (bytes[0x13] << (1 * 8)) |
-            (bytes[0x14] << (2 * 8)) |
-            (bytes[0x15] << (3 * 8));
-        const statedHeight =
-            (bytes[0x16] << (0 * 8)) |
-            (bytes[0x17] << (1 * 8)) |
-            (bytes[0x18] << (2 * 8)) |
-            (bytes[0x19] << (3 * 8));
-
-        const expectedImageDataSize = getImageDataSizeInBytes(
-            statedWidth,
-            statedHeight
-        );
-
-        if (expectedImageDataSize !== statedImageDataSize) {
-            throw new Error(
-                'The stated image data size differs from the expected size for this BMP implementation'
-            );
-        }
-
+        verifyBmpFile(buffer);
+        // Previous function would have thrown an error if the file were
+        // invalid, the next function call should be safe
         return parseVerifiedBmpFile(buffer);
     },
     write: image => {
@@ -223,6 +134,81 @@ export { Bmp };
 export default Bmp;
 
 /**
+ * Contains a list of relative addresses for data in the bitmap file header.
+ * These are also absolute addresses, as this is guaranteed to start at byte 0
+ * in a BMP file.
+ */
+const enum BitmapFileHeaderAddress {
+    /** In this bitmap implementation, must be "BM". */
+    SIGNATURE = 0x00,
+    /** The size of this bitmap file. */
+    FILE_SIZE = 0x02,
+    /** The offset of the image data in this file. */
+    IMAGE_DATA_OFFSET = 0x0a,
+    /**
+     * The address of the dib header.
+     *
+     * This is not necessarily defined by the spec itself, but by my observation
+     * that the file header has size of exactly 0x0e, and the dib header comes
+     * immediately after the file header.
+     */
+    DIB_HEADER = 0x0e,
+}
+
+/**
+ * Contains a list of relative addresses for data inside the BITMAPINFOHEADER.
+ *
+ * If only this were written in C with its beautiful structs and pointer
+ * arithmetic...
+ */
+const enum BitmapInfoHeaderAddress {
+    /** The size of this header. Must have value 0x28. */
+    SIZE = 0x00,
+    /** The width of the image, in pixels. */
+    WIDTH = 0x04,
+    /** The height of the image, in pixels. */
+    HEIGHT = 0x08,
+    /** Not sure what txhis is the for, but the spec said the value "must be 1". */
+    COLOR_PLANES = 0x0c,
+    /** Bpp of this image. */
+    BITS_PER_PIXEL = 0x0e,
+    /**
+     * An enum of the possible compression methods as defined by the spec (only
+     * BI_RGB supported here).
+     *
+     * @see {BitmapCompressionMethod}
+     */
+    COMPRESSION_METHOD = 0x10,
+}
+
+/**
+ * Possible compression methods and their enum values as defined by the BMP
+ * spec.
+ */
+const enum BitmapCompressionMethod {
+    /** Only supported compression method. */
+    BI_RGB = 0,
+    /** Not supported. */
+    BI_RLE8 = 1,
+    /** Not supported. */
+    BI_RLE4 = 2,
+    /** Not supported. */
+    BI_BITFIELDS = 3,
+    /** Not supported. */
+    BI_JPEG = 4,
+    /** Not supported. */
+    BI_PNG = 5,
+    /** Not supported. */
+    BI_ALPHABITFIELDS = 6,
+    /** Not supported. */
+    BI_CMYK = 11,
+    /** Not supported. */
+    BI_CMYKRLE8 = 12,
+    /** Not supported. */
+    BI_CMYKRLE4 = 13,
+}
+
+/**
  * Gets the number of bytes a single row in the image occupies, including its
  * padding.
  *
@@ -254,10 +240,10 @@ const getImageDataSizeInBytes = (width: number, height: number) => {
  * provided, it will be cut off at the given amount of bytes. Also note that
  * this has NO SUPPORT for negative numbers.
  *
- * @param byteArray The array of bytes to which to write
- * @param value     The number value to be written
- * @param offset    The exact byte at which to start writing
- * @param numBytes  The number of bytes to write to the array
+ * @param byteArray The array of bytes to which to write.
+ * @param value     The number value to be written.
+ * @param offset    The exact byte at which to start writing.
+ * @param numBytes  The number of bytes to write to the array.
  */
 const writeLittleEndianBytes = (
     byteArray: Uint8Array,
@@ -268,6 +254,137 @@ const writeLittleEndianBytes = (
     for (let i = offset; i < offset + numBytes; i++) {
         byteArray[i] = value & 0xff;
         value >>= 8;
+    }
+};
+
+/**
+ * Reads in an integer from a a specified number of bytes from a `Uint8Array`.
+ *
+ * @param byteArray The array of bytes to read from.
+ * @param offset    The index at which to start reading.
+ * @param numBytes  The amount of bytes to read.
+ * @returns         The integer result of the concatenated bytes.
+ */
+const readLittleEndianBytes = (
+    byteArray: Uint8Array,
+    offset: number,
+    numBytes: number
+) => {
+    let read = 0;
+    for (let i = offset; i < offset + numBytes; i++) {
+        read |= byteArray[i] << (8 * (i - offset));
+    }
+    return read;
+};
+
+/**
+ * Verifies a BMP file, whose data is represented as a buffer, and returns if
+ * the file was valid.
+ *
+ * Assumes that the `ArrayBuffer` contains _all_ the file data, and that it
+ * _only_ contains the file data.
+ *
+ * @throws {Error} If the given file is either not supported or invalid.
+ */
+const verifyBmpFile = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+
+    if (!buffer.byteLength) {
+        throw new Error('Cannot read an empty BMP file');
+    }
+
+    const COMBINED_HEADER_SIZE = 0x36;
+
+    if (buffer.byteLength < COMBINED_HEADER_SIZE) {
+        throw new Error(
+            'Malformed BMP file: not enough information to store the file headers'
+        );
+    }
+
+    // TODO: Give names to the magic numbers that denote the number of bytes for
+    // each of these elements being read/verified; for _now_, this should work
+
+    const signature = readLittleEndianBytes(
+        bytes,
+        BitmapFileHeaderAddress.SIGNATURE,
+        2
+    );
+
+    // If we don't see the "BM" characters, it doesn't have the signature we recognise
+    if (signature !== 0x4d42) {
+        throw new Error('The given file does not have the BMP file signature');
+    }
+
+    const statedFileLength = readLittleEndianBytes(
+        bytes,
+        BitmapFileHeaderAddress.FILE_SIZE,
+        4
+    );
+
+    if (statedFileLength !== buffer.byteLength) {
+        throw new Error('The BMP file does not state its own size correctly');
+    }
+
+    const statedImageDataOffset = readLittleEndianBytes(
+        bytes,
+        BitmapFileHeaderAddress.IMAGE_DATA_OFFSET,
+        4
+    );
+
+    const ONLY_SUPPORTED_COMBINED_HEADER_SIZE = 0x36;
+
+    // TODO: Perhaps change this to a "<" and let them pad the file if they want?
+    if (statedImageDataOffset !== ONLY_SUPPORTED_COMBINED_HEADER_SIZE) {
+        throw new Error(
+            'Image data for BMP must start at byte 0x36; nothing else is supported'
+        );
+    }
+
+    const DIB_HEADER = BitmapFileHeaderAddress.DIB_HEADER;
+
+    const bitsPerPixel = readLittleEndianBytes(
+        bytes,
+        DIB_HEADER + BitmapInfoHeaderAddress.BITS_PER_PIXEL,
+        2
+    );
+
+    if (bitsPerPixel !== 24) {
+        throw new Error(
+            'Only 24 bits per pixel (bpp) is supported for BMP files'
+        );
+    }
+
+    const compressionMethod = readLittleEndianBytes(
+        bytes,
+        DIB_HEADER + BitmapInfoHeaderAddress.COMPRESSION_METHOD,
+        2
+    );
+
+    if (compressionMethod !== BitmapCompressionMethod.BI_RGB) {
+        throw new Error('Only BI_RGB compression is supported for BMP files');
+    }
+
+    const statedImageDataSize = bytes.length - COMBINED_HEADER_SIZE;
+    const statedWidth = readLittleEndianBytes(
+        bytes,
+        DIB_HEADER + BitmapInfoHeaderAddress.WIDTH,
+        4
+    );
+    const statedHeight = readLittleEndianBytes(
+        bytes,
+        DIB_HEADER + BitmapInfoHeaderAddress.HEIGHT,
+        4
+    );
+
+    const expectedImageDataSize = getImageDataSizeInBytes(
+        statedWidth,
+        statedHeight
+    );
+
+    if (expectedImageDataSize !== statedImageDataSize) {
+        throw new Error(
+            'The stated image data size differs from the expected size for this BMP implementation'
+        );
     }
 };
 

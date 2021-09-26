@@ -278,5 +278,71 @@ describe('read', () => {
         });
     });
 
-    describe('parse', () => {});
+    describe('parse', () => {
+        it('successfully reads a 1-bytes width and height', () => {
+            let buffer = Bmp.create({
+                width: 32,
+                height: 32,
+            }).toBuffer();
+
+            let parsedBmp = Bmp.fromBmpFile(buffer);
+
+            expect(parsedBmp.width).toEqual(32);
+            expect(parsedBmp.height).toEqual(32);
+
+            buffer = Bmp.create({
+                width: 16,
+                height: 16,
+            }).toBuffer();
+
+            parsedBmp = Bmp.fromBmpFile(buffer);
+            expect(parsedBmp.width).toEqual(16);
+            expect(parsedBmp.height).toEqual(16);
+
+            buffer = Bmp.create({
+                width: 16,
+                height: 8,
+            }).toBuffer();
+
+            parsedBmp = Bmp.fromBmpFile(buffer);
+            expect(parsedBmp.width).toEqual(16);
+            expect(parsedBmp.height).toEqual(8);
+        });
+
+        it('successfully reads multi-byte width and height', () => {
+            const buffer = Bmp.create({
+                width: 0x200,
+                height: 0x200,
+            }).toBuffer();
+
+            const parsedBmp = Bmp.fromBmpFile(buffer);
+
+            expect(parsedBmp.width).toEqual(0x200);
+            expect(parsedBmp.height).toEqual(0x200);
+        });
+
+        it('can read in the 2 x 2 wikipedia image', () => {
+            const buffer = Bmp.create({
+                width: 2,
+                height: 2,
+                redChannel: new Uint8Array([0xff, 0xff, 0x00, 0x00]),
+                greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff]),
+                blueChannel: new Uint8Array([0x00, 0xff, 0xff, 0x00]),
+            }).toBuffer();
+
+            const bmp = Bmp.fromBmpFile(buffer);
+
+            expect(bmp.width).toEqual(2);
+            expect(bmp.height).toEqual(2);
+            expect(Array.from(bmp.redChannel)).toEqual([
+                0xff, 0xff, 0x00, 0x00,
+            ]);
+            expect(Array.from(bmp.greenChannel)).toEqual([
+                0x00, 0xff, 0x00, 0xff,
+            ]);
+            expect(Array.from(bmp.blueChannel)).toEqual([
+                0x00, 0xff, 0xff, 0x00,
+            ]);
+        });
+    });
 });

@@ -115,7 +115,65 @@ class Bmp {
             );
         }
 
-        return null;
+        return Bmp.parseVerifiedBmpFile(bmpData);
+    }
+
+    /**
+     * Parses a BMP file that has been verified to:
+     *
+     * 1. Be supported, and
+     * 2. Have consistent and correct data, according to the file spec.
+     *
+     * If these conditions are not met, this function can and will break in
+     * unexpected ways and probably won't give the intended resulting object.
+     *
+     * @param verifiedBmpData   A BMP file that has already had all the
+     *                          necessary sanity checks performed on it.
+     */
+    private static parseVerifiedBmpFile(verifiedBmpData: ArrayBuffer): Bmp {
+        // Start by getting the offset of the image data in bytes
+        const bytes = new Uint8Array(verifiedBmpData);
+        const width =
+            (bytes[0x12] << (8 * 0)) |
+            (bytes[0x13] << (8 * 1)) |
+            (bytes[0x14] << (8 * 2)) |
+            (bytes[0x15] << (8 * 3));
+        const height =
+            (bytes[0x16] << (8 * 0)) |
+            (bytes[0x17] << (8 * 1)) |
+            (bytes[0x18] << (8 * 2)) |
+            (bytes[0x19] << (8 * 3));
+
+        const IMAGE_DATA_START = 0x36;
+
+        // TODO: There is a much better way of doing this
+        const numBytesPerRow = Bmp.create({
+            width,
+            height,
+        }).getNumBytesPerRow();
+
+        const redChannel = new Uint8Array(width * height);
+        const greenChannel = new Uint8Array(width * height);
+        const blueChannel = new Uint8Array(width * height);
+
+        // Iterate y first so the pixels are accessed sequentially; it makes
+        // debugging easier
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const px = IMAGE_DATA_START + numBytesPerRow * y + 3 * x;
+                blueChannel[y * width + x] = bytes[px + 0];
+                greenChannel[y * width + x] = bytes[px + 1];
+                redChannel[y * width + x] = bytes[px + 2];
+            }
+        }
+
+        return Bmp.create({
+            width,
+            height,
+            redChannel,
+            greenChannel,
+            blueChannel,
+        });
     }
 
     /**
@@ -148,14 +206,29 @@ class Bmp {
     private _blueChannel: Uint8Array;
     private _greenChannel: Uint8Array;
 
-    /** The width of the image, in pixels */
+    /** The width of the image, in pixels. */
     public get width() {
         return this._width;
     }
 
-    /** The height of the image, in pixels */
+    /** The height of the image, in pixels. */
     public get height() {
         return this._height;
+    }
+
+    /** Gets a copy of this BMP's red channel. */
+    public get redChannel() {
+        return new Uint8Array(this._redChannel);
+    }
+
+    /** Gets a copy of this BMP's green channel. */
+    public get greenChannel() {
+        return new Uint8Array(this._greenChannel);
+    }
+
+    /** Gets a copy of this BMP's blue channel. */
+    public get blueChannel() {
+        return new Uint8Array(this._blueChannel);
     }
 
     private constructor(options?: BmpOptions) {

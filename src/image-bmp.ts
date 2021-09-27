@@ -342,7 +342,8 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
         BitmapFileHeaderSize.SIGNATURE
     );
 
-    // If we don't see the "BM" characters, it doesn't have the signature we recognise
+    // If we don't see the "BM" characters, it doesn't have the signature we
+    // recognise
     if (signature !== 0x4d42) {
         throw new Error('The given file does not have the BMP file signature');
     }
@@ -365,13 +366,17 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
 
     const ONLY_SUPPORTED_COMBINED_HEADER_SIZE = 0x36;
 
-    // TODO: Perhaps change this to a "<" and let them pad the file if they want?
+    // TODO: Perhaps change this to a "<" and let them include extra metadata if
+    // they want?
     if (statedImageDataOffset !== ONLY_SUPPORTED_COMBINED_HEADER_SIZE) {
         throw new Error(
             'Image data for BMP must start at byte 0x36; nothing else is supported'
         );
     }
 
+    // It makes a bit more sense to BITMAPINFOHEADER as a struct of its own with
+    // relative addresses than as an absolute location in a bitmap file, even
+    // though that's how it's implemented according to the spec
     const DIB_HEADER = BitmapFileHeaderAddress.DIB_HEADER;
 
     const bitsPerPixel = readLittleEndianBytes(
@@ -396,7 +401,7 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
         throw new Error('Only BI_RGB compression is supported for BMP files');
     }
 
-    const statedImageDataSize = bytes.length - COMBINED_HEADER_SIZE;
+    const statedImageDataSize = bytes.byteLength - COMBINED_HEADER_SIZE;
     const statedWidth = readLittleEndianBytes(
         bytes,
         DIB_HEADER + BitmapInfoHeaderAddress.WIDTH,
@@ -435,18 +440,19 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
 const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
     // Start by getting the offset of the image data in bytes
     const bytes = new Uint8Array(verifiedBmpData);
-    // TODO: We made a function to clean up this nonsense, use it here; that
-    // will also get rid of all these magic numbers
-    const width =
-        (bytes[0x12] << (8 * 0)) |
-        (bytes[0x13] << (8 * 1)) |
-        (bytes[0x14] << (8 * 2)) |
-        (bytes[0x15] << (8 * 3));
-    const height =
-        (bytes[0x16] << (8 * 0)) |
-        (bytes[0x17] << (8 * 1)) |
-        (bytes[0x18] << (8 * 2)) |
-        (bytes[0x19] << (8 * 3));
+
+    const DIB_HEADER = BitmapFileHeaderAddress.DIB_HEADER;
+
+    const width = readLittleEndianBytes(
+        bytes,
+        DIB_HEADER + BitmapInfoHeaderAddress.WIDTH,
+        BitmapInfoHeaderSize.WIDTH
+    );
+    const height = readLittleEndianBytes(
+        bytes,
+        DIB_HEADER + BitmapInfoHeaderAddress.HEIGHT,
+        BitmapInfoHeaderSize.HEIGHT
+    );
 
     // TODO: Read this from the file; it'll make this parser that much more
     // compatible

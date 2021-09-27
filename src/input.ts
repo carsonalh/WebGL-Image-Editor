@@ -1,8 +1,14 @@
-import store, { addCameraPosition, setImagePixel, setMouseDown } from './store';
+import store, {
+    addCameraPosition,
+    setImageData,
+    setImagePixel,
+    setMouseDown,
+} from './store';
 import { screenToWorld, screenToWorldUnits } from './camera';
 import { multiplyCameraScale } from './store';
 import { Program } from './webgl';
 import { Bmp } from './image-bmp';
+import { Image } from './image';
 
 function setupInput(canvas: HTMLCanvasElement, program: Program) {
     // We want to disable the context menu when right clicking on the canvas.
@@ -162,6 +168,83 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         a.href = url;
         a.download = 'image.bmp';
         a.click();
+    };
+
+    // This cast is deadly; add some runtime checks to catch this error before
+    // it's an issue
+    const fileChooser = document.getElementById(
+        'image-upload'
+    ) as HTMLInputElement;
+
+    let file: null | File = null;
+
+    fileChooser.addEventListener(
+        'change',
+        async function () {
+            // Perhaps add some validation for this list
+            const { files } = this;
+            if (files.length) {
+                file = files.item(0);
+                console.log(
+                    `Found a file of length ${Math.round(file.size / 1024)}K`
+                );
+            } else {
+                console.log('No files were given');
+            }
+        },
+        false
+    );
+
+    const uploadButton = document.getElementById('upload-button');
+
+    uploadButton.onclick = async function (e) {
+        if (file !== null) {
+            console.log('ATTEMPTING TO UPLOAD');
+            const buffer = await file.arrayBuffer();
+            let image: null | Image = null;
+            try {
+                image = Bmp.read(buffer);
+            } catch (e) {
+                if (!(e instanceof Error)) {
+                    console.error(e);
+                    return;
+                } else {
+                    e.stack && console.error(e.stack);
+                    console.error(e.message);
+                    return;
+                }
+            }
+
+            console.log('READ THE IMAGE');
+
+            // Don't think this is immutable
+            const { imageHeight, imageWidth, imageData } = {
+                ...store.getState().scene,
+            };
+
+            // Better
+            const data = [...imageData];
+            // These typed arrays should only read and not write data
+            const redBytes = new Uint8Array(image.redChannel);
+            const greenBytes = new Uint8Array(image.greenChannel);
+            const blueBytes = new Uint8Array(image.blueChannel);
+
+            for (let y = 0; y < imageHeight; y++) {
+                for (let x = 0; x < imageWidth; x++) {
+                    const index = y * imageWidth + x;
+                    // 4 bytes per pixel (RGBA)
+                    const px = 4 * index;
+                    data[px + 0] = redBytes[index];
+                    data[px + 1] = greenBytes[index];
+                    data[px + 2] = blueBytes[index];
+                    data[px + 3] = 0xff;
+                }
+            }
+
+            store.dispatch(setImageData(data));
+
+            program.update();
+        }
     };
 }
 

@@ -4,9 +4,14 @@ import { createProgram, render } from './webgl';
 export default function main(gl: WebGLRenderingContext) {
     // This is the object containing the non-serializable WebGL references
     const program = createProgram(gl);
+
+    if (!program) {
+        throw new Error('Could not initialize the program');
+    }
+
     program.update = () => render(gl, program);
     // Sets up the input hooks
-    setupInput(gl.canvas as HTMLCanvasElement, program);
+    setupInput(gl.canvas, program);
     // Do the first render; all renders after this are done by program.update()
     program.update();
 }

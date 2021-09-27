@@ -120,17 +120,22 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
     const downloadButton = document.getElementById('image-download');
 
-    downloadButton.onclick = function (ev) {};
+    if (downloadButton) {
+        downloadButton.onclick = function (ev) {};
+    }
 }
 
 export function parseColorInput(string: string) {
-    let m;
-    if ((m = string.match(/^#([0-9a-f]{6})$/i)[1])) {
+    const matchResult = string.match(/^#([0-9a-f]{6})$/i);
+    if (matchResult && matchResult[1]) {
+        const match = matchResult[1];
         return [
-            parseInt(m.substr(0, 2), 16),
-            parseInt(m.substr(2, 2), 16),
-            parseInt(m.substr(4, 2), 16),
+            parseInt(match.substr(0, 2), 16),
+            parseInt(match.substr(2, 2), 16),
+            parseInt(match.substr(4, 2), 16),
         ];
+    } else {
+        return [0, 0, 0];
     }
 }
 

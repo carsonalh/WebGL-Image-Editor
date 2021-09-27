@@ -49,9 +49,31 @@ export interface Program {
     update: () => any;
 }
 
-export function createProgram(gl: WebGLRenderingContext): Program {
+export function createProgram(gl: WebGLRenderingContext): Program | null {
     const shaderProgram = createShaderProgram(gl, vertexSource, fragmentSource);
     const buffers = createBuffers(gl);
+
+    if (!shaderProgram || !buffers) {
+        return null;
+    }
+
+    const projectionMatrix = gl.getUniformLocation(
+        shaderProgram,
+        'uProjectionMatrix'
+    );
+
+    const modelViewMatrix = gl.getUniformLocation(
+        shaderProgram,
+        'uModelViewMatrix'
+    );
+
+    const uniformTexture = gl.getUniformLocation(shaderProgram, 'uSampler');
+
+    const texture = gl.createTexture();
+
+    if (!projectionMatrix || !modelViewMatrix || !uniformTexture || !texture) {
+        return null;
+    }
 
     return {
         program: shaderProgram,
@@ -66,21 +88,15 @@ export function createProgram(gl: WebGLRenderingContext): Program {
             ),
         },
         uniformLocations: {
-            projectionMatrix: gl.getUniformLocation(
-                shaderProgram,
-                'uProjectionMatrix'
-            ),
-            modelViewMatrix: gl.getUniformLocation(
-                shaderProgram,
-                'uModelViewMatrix'
-            ),
-            texture: gl.getUniformLocation(shaderProgram, 'uSampler'),
+            projectionMatrix,
+            modelViewMatrix,
+            texture: uniformTexture,
         },
         buffers,
-        texture: gl.createTexture(),
+        texture,
         textureWidth: 1,
         textureHeight: 1,
-        update: null,
+        update: () => null,
     };
 }
 
@@ -95,6 +111,10 @@ function createShaderProgram(
         source: string
     ) => {
         const shader = gl.createShader(type);
+
+        if (!shader) {
+            return null;
+        }
 
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
@@ -112,6 +132,11 @@ function createShaderProgram(
     const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
 
     const shaderProgram = gl.createProgram();
+
+    if (!shaderProgram || !vertexShader || !fragmentShader) {
+        return null;
+    }
+
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
@@ -134,6 +159,10 @@ function createBuffers(gl: WebGLRenderingContext) {
     const positionBuffer = gl.createBuffer();
     const texCoordBuffer = gl.createBuffer();
     const elementBuffer = gl.createBuffer();
+
+    if (!positionBuffer || !texCoordBuffer || !elementBuffer) {
+        return null;
+    }
 
     {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);

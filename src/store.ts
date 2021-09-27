@@ -47,6 +47,9 @@ const sceneSlice = createSlice({
             state.imageData[4 * pxIndex + 2] = (color & 0x00ff0000) >> (2 * 8);
             state.imageData[4 * pxIndex + 3] = (color & 0xff000000) >> (3 * 8);
         },
+        setImageData(state, action) {
+            state.imageData = action.payload;
+        },
     },
 });
 
@@ -57,6 +60,7 @@ export const {
     multiplyCameraScale,
     setMouseDown,
     setImagePixel,
+    setImageData,
 } = sceneSlice.actions;
 
 const store = configureStore({

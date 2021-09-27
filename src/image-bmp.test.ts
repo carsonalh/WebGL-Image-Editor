@@ -231,7 +231,7 @@ describe('read', () => {
             expect(() => Bmp.read(bytes.buffer)).toThrowError();
         });
 
-        it('throws error if starting address is not directly after header (at address 0x36)', () => {
+        it('throws error if cannot fit image data given starting address', () => {
             const bytes = new Uint8Array(goodFile);
 
             // Change starting address to say 0x37, one byte after what it should be
@@ -241,6 +241,33 @@ describe('read', () => {
             bytes[0x0d] = 0x00;
 
             expect(() => Bmp.read(bytes.buffer)).toThrowError();
+        });
+
+        it('does not throw an error if there is padding before the image data, but the data fits in the file', () => {
+            const bytes = new Uint8Array(goodFile);
+
+            const headers = bytes.slice(0, 0x36);
+            const imageData = bytes.slice(0x36);
+            // Say we want the image data to have alignment size 4: change
+            // starting address from 0x36 to 0x38, hence the "+ 2"
+            const size = bytes.length + 2;
+
+            // Since we've changed the size of the file, we have to write that as well
+            headers[0x02] = (size & 0x000000ff) >> (8 * 0);
+            headers[0x03] = (size & 0x0000ff00) >> (8 * 1);
+            headers[0x04] = (size & 0x00ff0000) >> (8 * 2);
+            headers[0x05] = (size & 0xff000000) >> (8 * 3);
+
+            headers[0x0a] = 0x38;
+            headers[0x0b] = 0x00;
+            headers[0x0c] = 0x00;
+            headers[0x0d] = 0x00;
+
+            const fileWithPadding = new Uint8Array(size);
+            fileWithPadding.set(headers, 0);
+            fileWithPadding.set(imageData, 0x38);
+
+            expect(() => Bmp.read(fileWithPadding.buffer)).not.toThrow();
         });
 
         it('throws error if header is not BITMAPINFOHEADER (size === 40, 0x28)', () => {
@@ -367,6 +394,58 @@ describe('read', () => {
                 0x00, 0xff, 0x00, 0xff,
             ]);
             expect(Array.from(new Uint8Array(bmp.blueChannel))).toEqual([
+                0xff, 0x00, 0x00, 0xff,
+            ]);
+        });
+
+        it('parses the 2x2 image when the image data does not begin directly after the headers', () => {
+            const buffer = Bmp.write(
+                Bmp.create({
+                    width: 2,
+                    height: 2,
+                    redChannel: new Uint8Array([0x00, 0x00, 0xff, 0xff]).buffer,
+                    greenChannel: new Uint8Array([0x00, 0xff, 0x00, 0xff])
+                        .buffer,
+                    blueChannel: new Uint8Array([0xff, 0x00, 0x00, 0xff])
+                        .buffer,
+                })
+            );
+
+            // Our implementation (at this stage) guarantees to write the data
+            // after the headers, at address 0x36, but we want it to be able to
+            // read other implementations
+            const bytes = new Uint8Array(buffer);
+            const headers = bytes.slice(0, 0x36);
+            const imageData = bytes.slice(0x36);
+
+            const size = buffer.byteLength + 2;
+            const offsetFileBytes = new Uint8Array(size);
+
+            // Set the size of the file in the file header
+            headers[0x02] = (size & 0x000000ff) >> (8 * 0);
+            headers[0x03] = (size & 0x0000ff00) >> (8 * 1);
+            headers[0x04] = (size & 0x00ff0000) >> (8 * 2);
+            headers[0x05] = (size & 0xff000000) >> (8 * 3);
+
+            // Set the new offset of the image data in the file header
+            headers[0x0a] = 0x38;
+            headers[0x0b] = 0x00;
+            headers[0x0c] = 0x00;
+            headers[0x0d] = 0x00;
+
+            offsetFileBytes.set(headers, 0);
+            offsetFileBytes.set(imageData, 0x38);
+
+            const image = Bmp.read(offsetFileBytes.buffer);
+
+            // Check that each of the channels are correct
+            expect(Array.from(new Uint8Array(image.redChannel))).toEqual([
+                0x00, 0x00, 0xff, 0xff,
+            ]);
+            expect(Array.from(new Uint8Array(image.greenChannel))).toEqual([
+                0x00, 0xff, 0x00, 0xff,
+            ]);
+            expect(Array.from(new Uint8Array(image.blueChannel))).toEqual([
                 0xff, 0x00, 0x00, 0xff,
             ]);
         });

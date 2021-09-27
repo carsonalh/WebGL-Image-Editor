@@ -324,13 +324,13 @@ const readLittleEndianBytes = (
 const verifyBmpFile = (buffer: ArrayBuffer) => {
     const bytes = new Uint8Array(buffer);
 
-    if (!buffer.byteLength) {
+    if (!bytes.length) {
         throw new Error('Cannot read an empty BMP file');
     }
 
     const COMBINED_HEADER_SIZE = 0x36;
 
-    if (buffer.byteLength < COMBINED_HEADER_SIZE) {
+    if (bytes.length < COMBINED_HEADER_SIZE) {
         throw new Error(
             'Malformed BMP file: not enough information to store the file headers'
         );
@@ -364,13 +364,12 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
         BitmapFileHeaderSize.IMAGE_DATA_OFFSET
     );
 
-    const ONLY_SUPPORTED_COMBINED_HEADER_SIZE = 0x36;
+    // Note that this is specifically tied to the implementation detail that
+    // BITMAPINFOHEADER is the header of choice
 
-    // TODO: Perhaps change this to a "<" and let them include extra metadata if
-    // they want?
-    if (statedImageDataOffset !== ONLY_SUPPORTED_COMBINED_HEADER_SIZE) {
+    if (statedImageDataOffset < COMBINED_HEADER_SIZE) {
         throw new Error(
-            'Image data for BMP must start at byte 0x36; nothing else is supported'
+            'Image data for BMP must start at at least 0x36 to store the headers'
         );
     }
 
@@ -401,7 +400,12 @@ const verifyBmpFile = (buffer: ArrayBuffer) => {
         throw new Error('Only BI_RGB compression is supported for BMP files');
     }
 
-    const statedImageDataSize = bytes.byteLength - COMBINED_HEADER_SIZE;
+    // This is not 100% correct, and is likely to fail in the future. In all the
+    // implementations we've been using so far, the image data ends when the
+    // file does, but according to the spec, this is not always the case. If and
+    // when this is fix, it should only involve changing `bytes.length` to
+    // whatever the end of the image is meant to be
+    const statedImageDataSize = bytes.length - statedImageDataOffset;
     const statedWidth = readLittleEndianBytes(
         bytes,
         DIB_HEADER + BitmapInfoHeaderAddress.WIDTH,
@@ -454,9 +458,11 @@ const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
         BitmapInfoHeaderSize.HEIGHT
     );
 
-    // TODO: Read this from the file; it'll make this parser that much more
-    // compatible
-    const IMAGE_DATA_START = 0x36;
+    const imageDataStart = readLittleEndianBytes(
+        bytes,
+        BitmapFileHeaderAddress.IMAGE_DATA_OFFSET,
+        BitmapFileHeaderSize.IMAGE_DATA_OFFSET
+    );
 
     const numBytesPerRow = getNumBytesPerRow(width, height);
 
@@ -474,7 +480,7 @@ const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
 
         for (let x = 0; x < width; x++) {
             // Read the pixel from y-positive = down
-            const px = IMAGE_DATA_START + numBytesPerRow * yUpPositive + 3 * x;
+            const px = imageDataStart + numBytesPerRow * yUpPositive + 3 * x;
             // And write it as y-positive = up
             blueChannel[y * width + x] = bytes[px + 0];
             greenChannel[y * width + x] = bytes[px + 1];

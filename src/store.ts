@@ -1,4 +1,4 @@
-import { configureStore, createSlice } from '@reduxjs/toolkit';
+import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 const INITIAL_WIDTH = 32;
 const INITIAL_HEIGHT = 32;
@@ -8,7 +8,7 @@ const sceneSlice = createSlice({
     initialState: {
         cameraX: 0,
         cameraY: 0,
-        cameraScale: 1,
+        cameraScale: 32,
         mouseDown: false,
         imageWidth: INITIAL_WIDTH,
         imageHeight: INITIAL_HEIGHT,
@@ -50,6 +50,54 @@ const sceneSlice = createSlice({
         setImageData(state, action) {
             state.imageData = action.payload;
         },
+        setImage(
+            state,
+            action: PayloadAction<{
+                width: number;
+                height: number;
+                data: number[];
+            }>
+        ) {
+            const { width, height, data } = action.payload;
+            state.imageWidth = width;
+            state.imageHeight = height;
+            state.imageData = data;
+        },
+        setImageSize(
+            state,
+            action: PayloadAction<{ width: number; height: number }>
+        ) {
+            const { width, height } = action.payload;
+            const oldHeight = state.imageHeight;
+            const oldWidth = state.imageWidth;
+            // Set the actual stored width and height
+            state.imageWidth = width;
+            state.imageHeight = height;
+
+            // Pixel bytes are stored as RGBA, one byte for each channel sample
+            const BYTES_PER_PIXEL = 4;
+
+            // Now update all the image data
+            const updatedImage = new Uint8Array(
+                BYTES_PER_PIXEL * width * height
+            ).fill(0xff);
+
+            const { imageData } = state;
+            const minWidth = Math.min(width, oldWidth);
+            const minHeight = Math.min(height, oldHeight);
+
+            for (let y = 0; y < minHeight; y++) {
+                const px = y * oldWidth;
+                const pxOffset = BYTES_PER_PIXEL * px;
+                const row = imageData.slice(
+                    pxOffset,
+                    pxOffset + BYTES_PER_PIXEL * minWidth
+                );
+                updatedImage.set(row, BYTES_PER_PIXEL * (y * width));
+            }
+
+            state.imageData = Array.from(updatedImage);
+        },
     },
 });
 
@@ -61,6 +109,8 @@ export const {
     setMouseDown,
     setImagePixel,
     setImageData,
+    setImageSize,
+    setImage,
 } = sceneSlice.actions;
 
 const store = configureStore({

@@ -1,7 +1,9 @@
 import store, {
     addCameraPosition,
+    setImage,
     setImageData,
     setImagePixel,
+    setImageSize,
     setMouseDown,
 } from './store';
 import { screenToWorld, screenToWorldUnits } from './camera';
@@ -28,7 +30,8 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         }
 
         const [clickX, clickY] = [e.offsetX, e.offsetY];
-        const { cameraScale, cameraX, cameraY } = store.getState().scene;
+        const { cameraScale, cameraX, cameraY, imageWidth, imageHeight } =
+            store.getState().scene;
         const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
             scale: cameraScale,
             width: (cameraScale * canvas.width) / canvas.height,
@@ -37,28 +40,43 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
             y: cameraY,
         });
 
-        const { textureWidth, textureHeight } = program;
-
-        // Image will always be centred at (0, 0); test if the click was in that image
         if (
-            -textureWidth / 2 <= worldX &&
-            worldX <= textureWidth / 2 &&
-            -textureHeight / 2 <= worldY &&
-            worldY <= textureHeight / 2
+            -imageWidth / 2 <= worldX &&
+            worldX <= imageWidth / 2 &&
+            -imageHeight / 2 <= worldY &&
+            worldY <= imageHeight / 2
         ) {
-            const { imageWidth: width, imageHeight: height } =
-                store.getState().scene;
-            // Now find the pixel to paint
+            // TODO: Eventually clean this mess up; not now though...
+            const createMapper =
+                (
+                    fromStart: number,
+                    fromEnd: number,
+                    toStart: number,
+                    toEnd: number
+                ) =>
+                (x: number) => {
+                    // Get where x is from fromStart (0) to fromEnd (1) as a percentage
+                    const fromPercent = (x - fromStart) / (fromEnd - fromStart);
+                    // Apply that percentage to the 'to' range
+                    const to = toStart + fromPercent * (toEnd - toStart);
+                    return to;
+                };
 
-            const { cameraScale } = store.getState().scene;
+            const worldToPixelX = createMapper(
+                -imageWidth / 2,
+                imageWidth / 2,
+                0,
+                imageWidth
+            );
+            const worldToPixelY = createMapper(
+                -imageHeight / 2,
+                imageHeight / 2,
+                imageHeight,
+                0
+            );
 
-            // Right should be positive X
-            const localX = worldX - -textureWidth / 2;
-            // Down should be positive Y
-            const localY = textureHeight / 2 - worldY;
-
-            const pixelX = Math.floor(width * localX);
-            const pixelY = Math.floor(height * localY);
+            const pixelX = Math.floor(worldToPixelX(worldX));
+            const pixelY = Math.floor(worldToPixelY(worldY));
 
             const colorPicker = document.getElementById(
                 'color-picker'
@@ -155,8 +173,8 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
             }
 
             const bmp = Bmp.create({
-                width: 32,
-                height: 32,
+                width: imageWidth,
+                height: imageHeight,
                 redChannel: redChannel.buffer,
                 blueChannel: blueChannel.buffer,
                 greenChannel: greenChannel.buffer,
@@ -204,7 +222,6 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     if (uploadButton) {
         uploadButton.onclick = async function (e) {
             if (file !== null) {
-                console.log('ATTEMPTING TO UPLOAD');
                 const buffer = await file.arrayBuffer();
                 let image: null | Image = null;
                 try {
@@ -220,23 +237,16 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                     }
                 }
 
-                console.log('READ THE IMAGE');
-
-                // Don't think this is immutable
-                const { imageHeight, imageWidth, imageData } = {
-                    ...store.getState().scene,
-                };
-
-                // Better
-                const data = [...imageData];
+                const { width, height } = image;
+                const data = new Array<number>(4 * width * height).fill(0x00);
                 // These typed arrays should only read and not write data
                 const redBytes = new Uint8Array(image.redChannel);
                 const greenBytes = new Uint8Array(image.greenChannel);
                 const blueBytes = new Uint8Array(image.blueChannel);
 
-                for (let y = 0; y < imageHeight; y++) {
-                    for (let x = 0; x < imageWidth; x++) {
-                        const index = y * imageWidth + x;
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const index = y * width + x;
                         // 4 bytes per pixel (RGBA)
                         const px = 4 * index;
                         data[px + 0] = redBytes[index];
@@ -246,12 +256,61 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                     }
                 }
 
-                store.dispatch(setImageData(data));
+                store.dispatch(setImage({ width, height, data }));
 
                 program.update();
             }
         };
     }
+
+    const widthInput = document.querySelector(
+        'input[type="number"]#image-width'
+    ) as HTMLInputElement | null;
+    const heightInput = document.querySelector(
+        'input[type="number"]#image-height'
+    ) as HTMLInputElement | null;
+
+    if (!widthInput) {
+        throw new Error('Could not find the image width input in the dom');
+    }
+
+    if (!heightInput) {
+        throw new Error('Could not find the image height input in the dom');
+    }
+
+    widthInput.onchange = function (e) {
+        e.preventDefault();
+        const target = e.target;
+        if (!target) throw new Error('The event target was null');
+
+        if (!(target instanceof HTMLInputElement)) {
+            throw new Error('The event target was not an input element');
+        }
+
+        const newWidth = Number(target.value);
+        const { imageHeight } = store.getState().scene;
+
+        store.dispatch(setImageSize({ width: newWidth, height: imageHeight }));
+
+        program.update();
+    };
+
+    heightInput.onchange = function (e) {
+        e.preventDefault();
+        const target = e.target;
+        if (!target) throw new Error('The event target was null');
+
+        if (!(target instanceof HTMLInputElement)) {
+            throw new Error('The event target was not an input element');
+        }
+
+        const newHeight = Number(target.value);
+        const { imageWidth } = store.getState().scene;
+
+        store.dispatch(setImageSize({ width: imageWidth, height: newHeight }));
+
+        program.update();
+    };
 }
 
 export function parseColorInput(string: string) {

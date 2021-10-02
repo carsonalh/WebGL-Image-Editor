@@ -44,8 +44,6 @@ export interface Program {
         indices: WebGLBuffer;
     };
     texture: WebGLTexture;
-    textureWidth: number;
-    textureHeight: number;
     update: () => any;
 }
 
@@ -94,8 +92,6 @@ export function createProgram(gl: WebGLRenderingContext): Program | null {
         },
         buffers,
         texture,
-        textureWidth: 1,
-        textureHeight: 1,
         update: () => null,
     };
 }
@@ -160,6 +156,8 @@ function createBuffers(gl: WebGLRenderingContext) {
     const texCoordBuffer = gl.createBuffer();
     const elementBuffer = gl.createBuffer();
 
+    const { scene } = store.getState();
+
     if (!positionBuffer || !texCoordBuffer || !elementBuffer) {
         return null;
     }
@@ -181,17 +179,29 @@ function createBuffers(gl: WebGLRenderingContext) {
     }
 
     {
+        const { imageWidth, imageHeight } = scene;
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
         const positions = [
             // Going clockwise
-            -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5,
+            // Top left
+            -imageWidth / 2,
+            imageHeight / 2,
+            // Top right
+            imageWidth / 2,
+            imageHeight / 2,
+            // Bottom right
+            imageWidth / 2,
+            -imageHeight / 2,
+            // Bottom left
+            -imageWidth / 2,
+            -imageHeight / 2,
         ];
 
         gl.bufferData(
             gl.ARRAY_BUFFER,
             new Float32Array(positions),
-            gl.STATIC_DRAW
+            gl.DYNAMIC_DRAW
         );
     }
 
@@ -206,7 +216,7 @@ function createBuffers(gl: WebGLRenderingContext) {
         gl.bufferData(
             gl.ARRAY_BUFFER,
             new Float32Array(texCoords),
-            gl.STATIC_DRAW
+            gl.DYNAMIC_DRAW
         );
     }
 
@@ -217,8 +227,32 @@ function createBuffers(gl: WebGLRenderingContext) {
     };
 }
 
+/**
+ * Gets the dimensions of an image as fit to pass into WebGL.
+ *
+ * Because there are constraints on the image sizes that can be passed into
+ * WebGL, we need a way to map arbitrary image sizes to WebGL-compatible image
+ * sizes. This function finds the dimensions suitable to pass to WebGL given the
+ * size of the actual image.
+ */
+export function getGlImageSize(
+    actualWidth: number,
+    actualHeight: number
+): [width: number, height: number] {
+    const maxLength = Math.max(actualWidth, actualHeight);
+
+    let power = 1;
+
+    while (power < maxLength) {
+        power *= 2;
+    }
+
+    return [power, power];
+}
+
 export function render(gl: WebGLRenderingContext, program: Program) {
     const { buffers } = program;
+    const { scene } = store.getState();
 
     gl.clearColor(0.15, 0.15, 0.15, 1.0);
     gl.clearDepth(1.0);
@@ -229,12 +263,36 @@ export function render(gl: WebGLRenderingContext, program: Program) {
     mat4.identity(modelViewMatrix);
 
     {
+        const { imageWidth, imageHeight } = scene;
+        // Going clockwise
+        const positions = [
+            // Top left
+            -imageWidth / 2,
+            imageHeight / 2,
+            // Top right
+            imageWidth / 2,
+            imageHeight / 2,
+            // Bottom right
+            imageWidth / 2,
+            -imageHeight / 2,
+            // Bottom left
+            -imageWidth / 2,
+            -imageHeight / 2,
+        ];
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(positions),
+            gl.DYNAMIC_DRAW
+        );
+
         const numComponents = 2;
         const type = gl.FLOAT;
         const normalize = false;
         const stride = 0;
         const offset = 0;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+
         gl.vertexAttribPointer(
             program.attribLocations.vertexPosition,
             numComponents,
@@ -247,12 +305,40 @@ export function render(gl: WebGLRenderingContext, program: Program) {
     }
 
     {
+        const { imageWidth, imageHeight } = scene;
+        const [width, height] = getGlImageSize(imageWidth, imageHeight);
+
+        const widthPercent = imageWidth / width;
+        const heightPercent = imageHeight / height;
+
+        // Define the vertices clockwise, starting from top left
+        const texCoords = [
+            // Assuming positive y goes downwards
+
+            // Top left
+            0.0,
+            0.0,
+            // Top right
+            widthPercent,
+            0.0,
+            // Bottom right
+            widthPercent,
+            heightPercent,
+            // Bottom left
+            0.0,
+            heightPercent,
+        ];
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texCoord);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(texCoords),
+            gl.DYNAMIC_DRAW
+        );
         const numComponents = 2;
         const type = gl.FLOAT;
         const normalize = false;
         const stride = 0;
         const offset = 0;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texCoord);
         gl.vertexAttribPointer(
             program.attribLocations.texCoordPosition,
             numComponents,
@@ -290,9 +376,23 @@ export function render(gl: WebGLRenderingContext, program: Program) {
         gl.activeTexture(gl.TEXTURE0 + slot);
         gl.bindTexture(gl.TEXTURE_2D, program.texture);
 
-        const { imageWidth: width, imageHeight: height } =
-            store.getState().scene;
-        const buffer = new Uint8Array(store.getState().scene.imageData);
+        const { imageWidth, imageHeight, imageData } = scene;
+        const [width, height] = getGlImageSize(imageWidth, imageHeight);
+        const buffer = new Uint8Array(4 * width * height);
+        // buffer.set(imageData, 0);
+        // const buffer = new Uint8Array(store.getState().scene.imageData);
+
+        for (let y = 0; y < imageHeight; y++) {
+            for (let x = 0; x < imageWidth; x++) {
+                const actualPxOffset = 4 * (y * imageWidth + x);
+                const pixel = imageData.slice(
+                    actualPxOffset,
+                    actualPxOffset + 4
+                );
+                const glPxOffset = 4 * (y * width + x);
+                buffer.set(pixel, glPxOffset);
+            }
+        }
 
         const level = 0;
         const internalFormat = gl.RGBA;

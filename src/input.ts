@@ -99,7 +99,8 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                 })
             );
 
-            program.update();
+            program.updateImageData();
+            program.render();
         }
     };
 
@@ -119,7 +120,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         if (mouseDown) {
             store.dispatch(addCameraPosition({ x: moveX, y: moveY }));
         }
-        program.update();
+
+        program.updateScene();
+        program.render();
     };
 
     canvas.onmouseup = e => {
@@ -129,7 +132,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         if (e.button == SECONDARY_BUTTON) {
             store.dispatch(setMouseDown(false));
         }
-        program.update();
+        // program.render();
     };
 
     canvas.onwheel = e => {
@@ -139,7 +142,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
             const direction = Math.sign(e.deltaY);
             const scalePercentage = 1.0 + 0.07 * direction;
             store.dispatch(multiplyCameraScale(scalePercentage));
-            program.update();
+
+            program.updateScene();
+            program.render();
         }
     };
 
@@ -258,7 +263,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
                 store.dispatch(setImage({ width, height, data }));
 
-                program.update();
+                program.updateImageData();
+                program.updateBuffers();
+                program.render();
             }
         };
     }
@@ -292,7 +299,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
         store.dispatch(setImageSize({ width: newWidth, height: imageHeight }));
 
-        program.update();
+        program.updateBuffers();
+        program.updateImageData();
+        program.render();
     };
 
     heightInput.onchange = function (e) {
@@ -309,7 +318,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
         store.dispatch(setImageSize({ width: imageWidth, height: newHeight }));
 
-        program.update();
+        program.updateBuffers();
+        program.updateImageData();
+        program.render();
     };
 }
 

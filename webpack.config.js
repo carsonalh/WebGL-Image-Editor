@@ -9,18 +9,16 @@ module.exports = {
         filename: 'main.bundle.js',
     },
     resolve: {
-        extensions: ['.js', '.ts']
+        extensions: ['.js', '.ts'],
     },
     module: {
         rules: [
             {
                 test: /\.tsx?$/,
                 use: 'ts-loader',
-                exclude: /node_modules/
-            }
-        ]
+                exclude: /node_modules/,
+            },
+        ],
     },
-    plugins: [
-        new HtmlWebpackPlugin({template: './src/index.html'})
-    ]
+    plugins: [new HtmlWebpackPlugin({ template: './src/index.html' })],
 };

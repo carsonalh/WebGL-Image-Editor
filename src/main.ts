@@ -1,6 +1,13 @@
 import { setupInput } from './input';
-import { createProgram, render } from './webgl';
+import {
+    createProgram,
+    render,
+    updateBuffers,
+    updateImageData,
+    updateScene,
+} from './webgl';
 
+// TODO: move all this logic into index.ts
 export default function main(gl: WebGLRenderingContext) {
     // This is the object containing the non-serializable WebGL references
     const program = createProgram(gl);
@@ -9,9 +16,17 @@ export default function main(gl: WebGLRenderingContext) {
         throw new Error('Could not initialize the program');
     }
 
-    program.update = () => render(gl, program);
+    program.updateImageData = () => updateImageData(gl, program);
+    program.updateScene = () => updateScene(gl, program);
+    program.updateBuffers = () => updateBuffers(gl, program);
+
+    program.render = () => render(gl, program);
+
     // Sets up the input hooks
     setupInput(gl.canvas, program);
-    // Do the first render; all renders after this are done by program.update()
-    program.update();
+
+    program.updateScene();
+    program.updateImageData();
+    program.updateBuffers();
+    program.render();
 }

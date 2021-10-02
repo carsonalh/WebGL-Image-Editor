@@ -44,7 +44,10 @@ export interface Program {
         indices: WebGLBuffer;
     };
     texture: WebGLTexture;
-    update: () => any;
+    updateScene: () => any;
+    updateImageData: () => any;
+    updateBuffers: () => any;
+    render: () => any;
 }
 
 export function createProgram(gl: WebGLRenderingContext): Program | null {
@@ -92,7 +95,10 @@ export function createProgram(gl: WebGLRenderingContext): Program | null {
         },
         buffers,
         texture,
-        update: () => null,
+        updateBuffers: () => null,
+        updateScene: () => null,
+        updateImageData: () => null,
+        render: () => null,
     };
 }
 
@@ -250,17 +256,37 @@ export function getGlImageSize(
     return [power, power];
 }
 
-export function render(gl: WebGLRenderingContext, program: Program) {
-    const { buffers } = program;
+export function updateScene(gl: WebGLRenderingContext, program: Program) {
     const { scene } = store.getState();
 
-    gl.clearColor(0.15, 0.15, 0.15, 1.0);
-    gl.clearDepth(1.0);
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program.program);
 
     const modelViewMatrix = mat4.create();
     mat4.identity(modelViewMatrix);
+
+    const projectionMatrix = getCameraMatrix({
+        scale: scene.cameraScale,
+        width: gl.canvas.width,
+        height: gl.canvas.height,
+        x: scene.cameraX,
+        y: scene.cameraY,
+    });
+
+    gl.uniformMatrix4fv(
+        program.uniformLocations.projectionMatrix,
+        false,
+        projectionMatrix
+    );
+    gl.uniformMatrix4fv(
+        program.uniformLocations.modelViewMatrix,
+        false,
+        modelViewMatrix
+    );
+}
+
+export function updateBuffers(gl: WebGLRenderingContext, program: Program) {
+    const { scene } = store.getState();
+    const { buffers } = program;
 
     {
         const { imageWidth, imageHeight } = scene;
@@ -349,75 +375,66 @@ export function render(gl: WebGLRenderingContext, program: Program) {
         );
         gl.enableVertexAttribArray(program.attribLocations.texCoordPosition);
     }
+}
+
+export function updateImageData(gl: WebGLRenderingContext, program: Program) {
+    const { scene } = store.getState();
+    const slot = 0;
+    gl.activeTexture(gl.TEXTURE0 + slot);
+    gl.bindTexture(gl.TEXTURE_2D, program.texture);
+
+    const { imageWidth, imageHeight, imageData } = scene;
+    const [width, height] = getGlImageSize(imageWidth, imageHeight);
+    const buffer = new Uint8Array(4 * width * height);
+
+    for (let y = 0; y < imageHeight; y++) {
+        for (let x = 0; x < imageWidth; x++) {
+            const actualPxOffset = 4 * (y * imageWidth + x);
+            const pixel = imageData.slice(actualPxOffset, actualPxOffset + 4);
+            const glPxOffset = 4 * (y * width + x);
+            buffer.set(pixel, glPxOffset);
+        }
+    }
+
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const format = internalFormat;
+    const border = 0;
+    const type = gl.UNSIGNED_BYTE;
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        level,
+        internalFormat,
+        width,
+        height,
+        border,
+        format,
+        type,
+        buffer
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+    gl.uniform1i(program.uniformLocations.texture, slot);
+}
+
+export function render(gl: WebGLRenderingContext, program: Program) {
+    const { buffers } = program;
+    const { scene } = store.getState();
+
+    gl.clearColor(0.15, 0.15, 0.15, 1.0);
+    gl.clearDepth(1.0);
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(program.program);
 
-    const projectionMatrix = getCameraMatrix({
-        scale: store.getState().scene.cameraScale,
-        width: gl.canvas.width,
-        height: gl.canvas.height,
-        x: store.getState().scene.cameraX,
-        y: store.getState().scene.cameraY,
-    });
-
-    gl.uniformMatrix4fv(
-        program.uniformLocations.projectionMatrix,
-        false,
-        projectionMatrix
-    );
-    gl.uniformMatrix4fv(
-        program.uniformLocations.modelViewMatrix,
-        false,
-        modelViewMatrix
-    );
-
-    {
-        const slot = 0;
-        gl.activeTexture(gl.TEXTURE0 + slot);
-        gl.bindTexture(gl.TEXTURE_2D, program.texture);
-
-        const { imageWidth, imageHeight, imageData } = scene;
-        const [width, height] = getGlImageSize(imageWidth, imageHeight);
-        const buffer = new Uint8Array(4 * width * height);
-        // buffer.set(imageData, 0);
-        // const buffer = new Uint8Array(store.getState().scene.imageData);
-
-        for (let y = 0; y < imageHeight; y++) {
-            for (let x = 0; x < imageWidth; x++) {
-                const actualPxOffset = 4 * (y * imageWidth + x);
-                const pixel = imageData.slice(
-                    actualPxOffset,
-                    actualPxOffset + 4
-                );
-                const glPxOffset = 4 * (y * width + x);
-                buffer.set(pixel, glPxOffset);
-            }
-        }
-
-        const level = 0;
-        const internalFormat = gl.RGBA;
-        const format = internalFormat;
-        const border = 0;
-        const type = gl.UNSIGNED_BYTE;
-        gl.texImage2D(
-            gl.TEXTURE_2D,
-            level,
-            internalFormat,
-            width,
-            height,
-            border,
-            format,
-            type,
-            buffer
-        );
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.generateMipmap(gl.TEXTURE_2D);
-
-        gl.uniform1i(program.uniformLocations.texture, slot);
-    }
+    // There is a chance that these calls are unnecessary
+    gl.enableVertexAttribArray(program.attribLocations.vertexPosition);
+    gl.enableVertexAttribArray(program.attribLocations.texCoordPosition);
 
     {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);

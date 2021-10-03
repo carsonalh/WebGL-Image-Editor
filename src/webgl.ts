@@ -388,12 +388,13 @@ export function updateImageData(gl: WebGLRenderingContext, program: Program) {
     const buffer = new Uint8Array(4 * width * height);
 
     for (let y = 0; y < imageHeight; y++) {
-        for (let x = 0; x < imageWidth; x++) {
-            const actualPxOffset = 4 * (y * imageWidth + x);
-            const pixel = imageData.slice(actualPxOffset, actualPxOffset + 4);
-            const glPxOffset = 4 * (y * width + x);
-            buffer.set(pixel, glPxOffset);
-        }
+        const actualPxOffset = 4 * (y * imageWidth);
+        const glPxOffset = 4 * (y * width);
+        const row = imageData.slice(
+            actualPxOffset,
+            actualPxOffset + 4 * imageWidth
+        );
+        buffer.set(row, glPxOffset);
     }
 
     const level = 0;
@@ -423,7 +424,6 @@ export function updateImageData(gl: WebGLRenderingContext, program: Program) {
 
 export function render(gl: WebGLRenderingContext, program: Program) {
     const { buffers } = program;
-    const { scene } = store.getState();
 
     gl.clearColor(0.15, 0.15, 0.15, 1.0);
     gl.clearDepth(1.0);

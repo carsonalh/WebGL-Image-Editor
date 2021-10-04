@@ -1,5 +1,12 @@
 import { getGlImageSize } from './webgl';
 
+/**
+ * Creates a mutable state store
+ *
+ * @param initialState Initialised public state
+ * @param implementationState Initialised private/implementation state
+ * @returns Object containing functions to read/write the state
+ */
 const createState = <
     State extends Record<string, any>,
     Impl extends Record<string, any> = Record<string, any>
@@ -21,19 +28,34 @@ const createState = <
     return { setState, getState, getAllState, mutateState };
 };
 
+/**
+ * Public application state for the WebGL scene.
+ */
 export interface SceneState {
+    /** The x coordinate of the camera */
     cameraX: number;
+    /** The y coordinate of the camera */
     cameraY: number;
+    /** The scale of the camera (used for zoom operations) */
     cameraScale: number;
+    /** Whether the right mouse button is down or not (for panning) */
     mouseDown: boolean;
+    /** The width of the image, as seen by the user */
     imageWidth: number;
+    /** The height of the image, as seen by the user */
     imageHeight: number;
-    glImageData: ArrayBuffer;
 }
 
+/**
+ * Private/implementation state for the WebGL scene.
+ */
 interface ImplementationState {
+    /** The width of the image, as seen by WebGL */
     glWidth: number;
+    /** The height of the image, as seen by WebGL */
     glHeight: number;
+    /** The image data, as given to WebGL */
+    glImageData: ArrayBuffer;
 }
 
 const INITIAL_WIDTH = 32;
@@ -52,24 +74,30 @@ const sceneState = createState<SceneState, ImplementationState>(
         mouseDown: false,
         imageWidth: INITIAL_WIDTH,
         imageHeight: INITIAL_HEIGHT,
-        glImageData: new Uint32Array(initialGlWidth * initialGlHeight).fill(
-            0xffffffff
-        ).buffer,
     },
     {
         glWidth: initialGlWidth,
         glHeight: initialGlHeight,
+        glImageData: new Uint32Array(initialGlWidth * initialGlHeight).fill(
+            0xffffffff
+        ).buffer,
     }
 );
 
 const { setState, getState, mutateState, getAllState } = sceneState;
 
-export { getState };
+export { getState, getAllState };
 
+/**
+ * Sets the position of the camera
+ */
 export const setCameraPosition = (x: number, y: number) => {
     setState({ cameraX: x, cameraY: y });
 };
 
+/**
+ * Adds an xy delta to the camera's position
+ */
 export const addCameraPosition = (dx: number, dy: number) => {
     mutateState(state => {
         state.cameraX += dx;
@@ -80,10 +108,19 @@ export const addCameraPosition = (dx: number, dy: number) => {
     console.log(`Camera { x = ${state.cameraX}, y = ${state.cameraY} }`);
 };
 
+/**
+ * Multiplies the camera's scale by a given factor
+ */
 export const multiplyCameraScale = (factor: number) => {
     mutateState(state => (state.cameraScale *= factor));
 };
 
+/**
+ * Sets the size of the image to a new width and height
+ *
+ * If width or height are smaller than what they were previously, the current
+ * implementation is the now cut-off data is not deleted.
+ */
 export const setImageSize = (width: number, height: number) => {
     mutateState(state => {
         if (width > state.glWidth || height > state.glHeight) {
@@ -114,9 +151,11 @@ export const setImageSize = (width: number, height: number) => {
     });
 };
 
-export const getGlWidth = () => getAllState().glWidth;
-export const getGlHeight = () => getAllState().glHeight;
-
+/**
+ * Sets a single pixel of the image to a given RGBA color
+ *
+ * @param color A little-endian RGBA color
+ */
 export const setImagePixel = (x: number, y: number, color: number) => {
     mutateState(state => {
         const imageData32 = new Uint32Array(state.glImageData);
@@ -125,6 +164,9 @@ export const setImagePixel = (x: number, y: number, color: number) => {
     });
 };
 
+/**
+ * Completely overwrites the old image with a new one
+ */
 export const setImage = (
     width: number,
     height: number,
@@ -151,13 +193,23 @@ export const setImage = (
     setState({ imageWidth: width, imageHeight: height });
 };
 
+/**
+ * Set whether the mouse is down or not (for panning).
+ */
 export const setMouseDown = (isMouseDown: boolean) => {
     setState({ mouseDown: isMouseDown });
 };
 
+/**
+ * Gets the image data that the user would see, and nothing else
+ *
+ * Because WebGL requires that image textures be a certain size, this accessor
+ * extracts only the relevant parts of the texture to produce an image with
+ * width `state.imageWidth` and height `state.imageHeight`.
+ */
 export const getImageData = () => {
-    const { imageWidth, imageHeight, glImageData } = getState();
-    const { glWidth, glHeight } = getAllState();
+    const { imageWidth, imageHeight } = getState();
+    const { glWidth, glHeight, glImageData } = getAllState();
 
     const imageData = new Uint32Array(imageWidth * imageHeight);
     const currentData = new Uint32Array(glImageData);

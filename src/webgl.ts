@@ -1,6 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { getCameraMatrix } from './camera';
-import { getGlHeight, getGlWidth, getState } from './state';
+import { getState, getAllState } from './state';
 
 const vertexSource = `
 attribute vec4 aVertexPosition;
@@ -328,11 +328,10 @@ export function updateBuffers(gl: WebGLRenderingContext, program: Program) {
     }
 
     {
-        const { imageWidth, imageHeight } = getState();
-        const [width, height] = [getGlWidth(), getGlHeight()];
+        const { imageWidth, imageHeight, glWidth, glHeight } = getAllState();
 
-        const widthPercent = imageWidth / width;
-        const heightPercent = imageHeight / height;
+        const widthPercent = imageWidth / glWidth;
+        const heightPercent = imageHeight / glHeight;
 
         // Define the vertices clockwise, starting from top left
         const texCoords = [
@@ -379,9 +378,8 @@ export function updateImageData(gl: WebGLRenderingContext, program: Program) {
     gl.activeTexture(gl.TEXTURE0 + slot);
     gl.bindTexture(gl.TEXTURE_2D, program.texture);
 
-    const { glImageData } = getState();
-    const { imageWidth, imageHeight } = getState();
-    const [width, height] = [getGlWidth(), getGlHeight()];
+    const { glWidth, glHeight, glImageData } = getAllState();
+    const [width, height] = [glWidth, glHeight];
     const buffer = new Uint8Array(glImageData);
 
     const level = 0;

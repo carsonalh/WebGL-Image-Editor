@@ -6,6 +6,7 @@ import {
     getState,
     setMouseDown,
     multiplyCameraScale,
+    getImageData,
 } from './state';
 import { screenToWorld, screenToWorldUnits } from './camera';
 import { Program } from './webgl';
@@ -150,21 +151,21 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
             // get the bare minimum working
             // Do not ship or rely on anything you see here
 
-            const { imageWidth, imageHeight, glImageData } = getState();
+            const { imageWidth, imageHeight, imageData } = getImageData();
 
             const redChannel = new Uint8Array(imageWidth * imageHeight);
             const blueChannel = new Uint8Array(imageWidth * imageHeight);
             const greenChannel = new Uint8Array(imageWidth * imageHeight);
 
-            const imageData = new Uint8Array(glImageData);
+            const pixelData = new Uint8Array(imageData);
 
             for (let y = 0; y < imageHeight; y++) {
                 for (let x = 0; x < imageWidth; x++) {
                     const px = y * imageWidth + x;
 
-                    const red = imageData[4 * px + 0];
-                    const green = imageData[4 * px + 1];
-                    const blue = imageData[4 * px + 2];
+                    const red = pixelData[4 * px + 0];
+                    const green = pixelData[4 * px + 1];
+                    const blue = pixelData[4 * px + 2];
 
                     blueChannel[px] = blue;
                     greenChannel[px] = green;

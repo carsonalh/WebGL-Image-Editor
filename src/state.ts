@@ -155,11 +155,17 @@ export const setMouseDown = (isMouseDown: boolean) => {
     setState({ mouseDown: isMouseDown });
 };
 
-// export const setImageData = (data: ArrayBuffer) => {
-//     mutateState(state => {
-//         const [width, height] = getGlImageSize(
-//             state.imageWidth,
-//             state.imageHeight
-//         );
-//     });
-// };
+export const getImageData = () => {
+    const { imageWidth, imageHeight, glImageData } = getState();
+    const { glWidth, glHeight } = getAllState();
+
+    const imageData = new Uint32Array(imageWidth * imageHeight);
+    const currentData = new Uint32Array(glImageData);
+
+    for (let y = 0; y < imageHeight; y++) {
+        const row = currentData.subarray(y * glWidth, y * glWidth + imageWidth);
+        imageData.set(row, y * imageWidth);
+    }
+
+    return { imageWidth, imageHeight, imageData: imageData.buffer };
+};

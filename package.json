@@ -13,10 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@reduxjs/toolkit": "^1.6.1",
     "gl-matrix": "^3.3.0",
-    "prettier": "^2.4.1",
-    "redux": "^4.1.1"
+    "prettier": "^2.4.1"
   },
   "devDependencies": {
     "@types/jest": "^27.0.1",

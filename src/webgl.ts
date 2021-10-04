@@ -1,6 +1,6 @@
-import store from './store';
 import { mat4 } from 'gl-matrix';
 import { getCameraMatrix } from './camera';
+import { getGlHeight, getGlWidth, getState } from './state';
 
 const vertexSource = `
 attribute vec4 aVertexPosition;
@@ -162,8 +162,6 @@ function createBuffers(gl: WebGLRenderingContext) {
     const texCoordBuffer = gl.createBuffer();
     const elementBuffer = gl.createBuffer();
 
-    const { scene } = store.getState();
-
     if (!positionBuffer || !texCoordBuffer || !elementBuffer) {
         return null;
     }
@@ -185,7 +183,7 @@ function createBuffers(gl: WebGLRenderingContext) {
     }
 
     {
-        const { imageWidth, imageHeight } = scene;
+        const { imageWidth, imageHeight } = getState();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
         const positions = [
@@ -257,7 +255,7 @@ export function getGlImageSize(
 }
 
 export function updateScene(gl: WebGLRenderingContext, program: Program) {
-    const { scene } = store.getState();
+    const { cameraX, cameraY, cameraScale } = getState();
 
     gl.useProgram(program.program);
 
@@ -265,11 +263,11 @@ export function updateScene(gl: WebGLRenderingContext, program: Program) {
     mat4.identity(modelViewMatrix);
 
     const projectionMatrix = getCameraMatrix({
-        scale: scene.cameraScale,
+        scale: cameraScale,
         width: gl.canvas.width,
         height: gl.canvas.height,
-        x: scene.cameraX,
-        y: scene.cameraY,
+        x: cameraX,
+        y: cameraY,
     });
 
     gl.uniformMatrix4fv(
@@ -285,11 +283,10 @@ export function updateScene(gl: WebGLRenderingContext, program: Program) {
 }
 
 export function updateBuffers(gl: WebGLRenderingContext, program: Program) {
-    const { scene } = store.getState();
     const { buffers } = program;
 
     {
-        const { imageWidth, imageHeight } = scene;
+        const { imageWidth, imageHeight } = getState();
         // Going clockwise
         const positions = [
             // Top left
@@ -331,8 +328,8 @@ export function updateBuffers(gl: WebGLRenderingContext, program: Program) {
     }
 
     {
-        const { imageWidth, imageHeight } = scene;
-        const [width, height] = getGlImageSize(imageWidth, imageHeight);
+        const { imageWidth, imageHeight } = getState();
+        const [width, height] = [getGlWidth(), getGlHeight()];
 
         const widthPercent = imageWidth / width;
         const heightPercent = imageHeight / height;
@@ -378,24 +375,14 @@ export function updateBuffers(gl: WebGLRenderingContext, program: Program) {
 }
 
 export function updateImageData(gl: WebGLRenderingContext, program: Program) {
-    const { scene } = store.getState();
     const slot = 0;
     gl.activeTexture(gl.TEXTURE0 + slot);
     gl.bindTexture(gl.TEXTURE_2D, program.texture);
 
-    const { imageWidth, imageHeight, imageData } = scene;
-    const [width, height] = getGlImageSize(imageWidth, imageHeight);
-    const buffer = new Uint8Array(4 * width * height);
-
-    for (let y = 0; y < imageHeight; y++) {
-        const actualPxOffset = 4 * (y * imageWidth);
-        const glPxOffset = 4 * (y * width);
-        const row = imageData.slice(
-            actualPxOffset,
-            actualPxOffset + 4 * imageWidth
-        );
-        buffer.set(row, glPxOffset);
-    }
+    const { glImageData } = getState();
+    const { imageWidth, imageHeight } = getState();
+    const [width, height] = [getGlWidth(), getGlHeight()];
+    const buffer = new Uint8Array(glImageData);
 
     const level = 0;
     const internalFormat = gl.RGBA;

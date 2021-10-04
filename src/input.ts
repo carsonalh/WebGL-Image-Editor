@@ -1,13 +1,13 @@
-import store, {
+import {
     addCameraPosition,
-    setImage,
-    setImageData,
-    setImagePixel,
     setImageSize,
+    setImagePixel,
+    setImage,
+    getState,
     setMouseDown,
-} from './store';
+    multiplyCameraScale,
+} from './state';
 import { screenToWorld, screenToWorldUnits } from './camera';
-import { multiplyCameraScale } from './store';
 import { Program } from './webgl';
 import { Bmp } from './image-bmp';
 import { Image } from './image';
@@ -25,13 +25,13 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
         const SECONDARY_BUTTON = 2;
         if (e.button == SECONDARY_BUTTON) {
-            store.dispatch(setMouseDown(true));
+            setMouseDown(true);
             return;
         }
 
         const [clickX, clickY] = [e.offsetX, e.offsetY];
-        const { cameraScale, cameraX, cameraY, imageWidth, imageHeight } =
-            store.getState().scene;
+        const { cameraX, cameraY, imageWidth, imageHeight, cameraScale } =
+            getState();
         const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
             scale: cameraScale,
             width: (cameraScale * canvas.width) / canvas.height,
@@ -92,12 +92,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                 (color[2] << (2 * 8)) |
                 (color[3] << (3 * 8));
 
-            store.dispatch(
-                setImagePixel({
-                    xy: { x: pixelX, y: pixelY },
-                    color: color32,
-                })
-            );
+            setImagePixel(pixelX, pixelY, color32);
 
             program.updateImageData();
             program.render();
@@ -106,19 +101,18 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
     canvas.onmousemove = e => {
         const [deltaX, deltaY] = [e.movementX, e.movementY];
-        const { mouseDown } = store.getState().scene;
+        const { cameraX, cameraY, cameraScale, mouseDown } = getState();
 
-        const { cameraScale } = store.getState().scene;
         const [moveX, moveY] = screenToWorldUnits([deltaX, deltaY], canvas, {
             width: (cameraScale * canvas.width) / canvas.height,
             height: cameraScale,
             scale: cameraScale,
-            x: store.getState().scene.cameraX,
-            y: store.getState().scene.cameraY,
+            x: cameraX,
+            y: cameraY,
         });
 
         if (mouseDown) {
-            store.dispatch(addCameraPosition({ x: moveX, y: moveY }));
+            addCameraPosition(moveX, moveY);
         }
 
         program.updateScene();
@@ -130,7 +124,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
         const SECONDARY_BUTTON = 2;
         if (e.button == SECONDARY_BUTTON) {
-            store.dispatch(setMouseDown(false));
+            setMouseDown(false);
         }
         // program.render();
     };
@@ -141,7 +135,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         if (e.deltaY !== 0) {
             const direction = Math.sign(e.deltaY);
             const scalePercentage = 1.0 + 0.07 * direction;
-            store.dispatch(multiplyCameraScale(scalePercentage));
+            multiplyCameraScale(scalePercentage);
 
             program.updateScene();
             program.render();
@@ -156,12 +150,13 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
             // get the bare minimum working
             // Do not ship or rely on anything you see here
 
-            const { imageWidth, imageHeight } = store.getState().scene;
-            const { imageData } = store.getState().scene;
+            const { imageWidth, imageHeight, glImageData } = getState();
 
             const redChannel = new Uint8Array(imageWidth * imageHeight);
             const blueChannel = new Uint8Array(imageWidth * imageHeight);
             const greenChannel = new Uint8Array(imageWidth * imageHeight);
+
+            const imageData = new Uint8Array(glImageData);
 
             for (let y = 0; y < imageHeight; y++) {
                 for (let x = 0; x < imageWidth; x++) {
@@ -243,7 +238,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                 }
 
                 const { width, height } = image;
-                const data = new Array<number>(4 * width * height).fill(0x00);
+                const data = new Uint8Array(4 * width * height).fill(0x00);
                 // These typed arrays should only read and not write data
                 const redBytes = new Uint8Array(image.redChannel);
                 const greenBytes = new Uint8Array(image.greenChannel);
@@ -261,7 +256,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                     }
                 }
 
-                store.dispatch(setImage({ width, height, data }));
+                setImage(width, height, data.buffer);
 
                 program.updateImageData();
                 program.updateBuffers();
@@ -295,9 +290,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         }
 
         const newWidth = Number(target.value);
-        const { imageHeight } = store.getState().scene;
+        const { imageHeight } = getState();
 
-        store.dispatch(setImageSize({ width: newWidth, height: imageHeight }));
+        setImageSize(newWidth, imageHeight);
 
         program.updateBuffers();
         program.updateImageData();
@@ -314,9 +309,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
         }
 
         const newHeight = Number(target.value);
-        const { imageWidth } = store.getState().scene;
+        const { imageWidth } = getState();
 
-        store.dispatch(setImageSize({ width: imageWidth, height: newHeight }));
+        setImageSize(imageWidth, newHeight);
 
         program.updateBuffers();
         program.updateImageData();

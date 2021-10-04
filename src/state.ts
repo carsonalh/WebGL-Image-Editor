@@ -103,9 +103,6 @@ export const addCameraPosition = (dx: number, dy: number) => {
         state.cameraX += dx;
         state.cameraY += dy;
     });
-
-    const state = getState();
-    console.log(`Camera { x = ${state.cameraX}, y = ${state.cameraY} }`);
 };
 
 /**

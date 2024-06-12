@@ -1,5 +1,7 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export type Tool = 'dot' | 'line';
+
 const INITIAL_WIDTH = 32;
 const INITIAL_HEIGHT = 32;
 
@@ -9,7 +11,9 @@ const sceneSlice = createSlice({
         cameraX: 0,
         cameraY: 0,
         cameraScale: 32,
-        mouseDown: false,
+        leftMouseDown: false,
+        rightMouseDown: false,
+        tool: 'dot' as Tool,
         imageWidth: INITIAL_WIDTH,
         imageHeight: INITIAL_HEIGHT,
         imageData: new Array<number>(4 * INITIAL_WIDTH * INITIAL_HEIGHT).fill(
@@ -33,8 +37,18 @@ const sceneSlice = createSlice({
         multiplyCameraScale(state, action) {
             state.cameraScale *= action.payload;
         },
-        setMouseDown(state, action) {
-            state.mouseDown = action.payload;
+        setLeftMouseDown(state, action) {
+            state.leftMouseDown = action.payload;
+        },
+        setRightMouseDown(state, action) {
+            state.rightMouseDown = action.payload;
+        },
+        setTool(state, action) {
+            if (!['dot', 'line'].includes(action.payload)) {
+                throw new Error('tool action payload of invalid format, got ' + action.payload);
+            }
+
+            state.tool = action.payload;
         },
         setImagePixel(state, action) {
             const { x, y } = action.payload.xy;
@@ -106,16 +120,69 @@ export const {
     addCameraPosition,
     setCameraScale,
     multiplyCameraScale,
-    setMouseDown,
+    setLeftMouseDown,
+    setRightMouseDown,
+    setTool,
     setImagePixel,
     setImageData,
     setImageSize,
     setImage,
 } = sceneSlice.actions;
 
+const lineToolSlice = createSlice({
+    name: 'line tool',
+    initialState: {
+        pixelStartX: null as number | null,
+        pixelStartY: null as number | null,
+        width: null as number | null,
+        height: null as number | null,
+        displayMask: null as Array<number> | null,
+    },
+    reducers: {
+        initialiseDisplayMask(state, action: PayloadAction<[[number, number], number[]]>) {
+            const [[width, height], displayMask] = action.payload;
+
+            if (displayMask.length !== width * height) {
+                throw new Error('inconsistent size of display mask initialisation and image dimensions');
+            }
+
+            state.width = width;
+            state.height = height;
+            state.displayMask = displayMask;
+        },
+        setStartXY(state, action: PayloadAction<[number, number]>) {
+            state.pixelStartX = action.payload[0];
+            state.pixelStartY = action.payload[1];
+        },
+        setDisplayMask(state, action: PayloadAction<number[]>) {
+            if (state.width == null || state.height == null || state.displayMask == null) {
+                throw new Error('cannot perform update on uninitialised display mask');
+            }
+
+            if (action.payload.length !== state.width * state.height) {
+                throw new Error('inconsistent displaymask update');
+            }
+
+            state.displayMask = action.payload;
+        },
+        uninitialiseLineTool(state, action) {
+            state.width = null;
+            state.height = null;
+            state.displayMask = null;
+        }
+    },
+});
+
+export const {
+    initialiseDisplayMask,
+    setDisplayMask,
+    setStartXY,
+} = lineToolSlice.actions;
+
 const store = configureStore({
     reducer: {
         scene: sceneSlice.reducer,
+        lineTool: lineToolSlice.reducer,
     },
 });
 

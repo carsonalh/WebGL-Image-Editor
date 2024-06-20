@@ -1,24 +1,10 @@
-// our tool will work like this:
-// begin: give the tool everything it needs to begin, a copy of the entire state, which it can copy into its own state all that it might need
-// update: update it whenever the state updates, with a handle to the new state
-// end: let it overwrite the real state with the updates
-
-import { screenToWorld } from '../camera';
 import store, {
     setImagePixel,
     setStartXY,
 } from '../store';
+import { Tool } from '.';
 
-type SceneState = ReturnType<typeof store.getState>['scene'];
-
-type LineToolState = ReturnType<typeof store.getState>['lineTool'];
-
-export interface ToolInterface {
-    onMouseDown(imageX: number, imageY: number): void;
-    onMouseUp(imageX: number, imageY: number): void;
-}
-
-export default class LineTool implements ToolInterface {
+export default class LineTool implements Tool {
     onMouseDown(imageX: number, imageY: number): void {
         console.log('onmousedown!!')
         const pixelX = Math.floor(imageX);

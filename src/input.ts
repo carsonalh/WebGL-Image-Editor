@@ -1,13 +1,9 @@
 import store, {
     addCameraPosition,
-    initialiseDisplayMask,
     setImage,
-    setImageData,
-    setImagePixel,
     setImageSize,
     setLeftMouseDown,
     setRightMouseDown,
-    setStartXY,
     setTool,
 } from './store';
 import { screenToWorld, screenToWorldUnits } from './camera';
@@ -15,8 +11,8 @@ import { multiplyCameraScale } from './store';
 import { Program } from './webgl';
 import { Bmp } from './image-bmp';
 import { Image } from './image';
-import LineTool from './tools/line-tool';
-import DotTool from './tools/dot-tool';
+import { onMouseDown, onMouseMove, onMouseUp, onMouseWheel } from './interface';
+import { DotTool, LineTool } from './tool';
 
 const tools = {
     'dot': new DotTool(),
@@ -34,193 +30,69 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     canvas.onmousedown = e => {
         e.preventDefault();
 
-        store.dispatch(setLeftMouseDown(true));
-
         const PRIMARY_BUTTON = 0;
         const SECONDARY_BUTTON = 2;
 
-        const [clickX, clickY] = [e.offsetX, e.offsetY];
-        const { cameraScale, cameraX, cameraY, imageWidth, imageHeight } =
-            store.getState().scene;
-        const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
-            scale: cameraScale,
-            width: (cameraScale * canvas.width) / canvas.height,
-            height: cameraScale,
-            x: cameraX,
-            y: cameraY,
-        });
+        let button = null;
 
-        // TODO: Eventually clean this mess up; not now though...
-        const createMapper =
-            (
-                fromStart: number,
-                fromEnd: number,
-                toStart: number,
-                toEnd: number
-            ) =>
-            (x: number) => {
-                // Get where x is from fromStart (0) to fromEnd (1) as a percentage
-                const fromPercent = (x - fromStart) / (fromEnd - fromStart);
-                // Apply that percentage to the 'to' range
-                const to = toStart + fromPercent * (toEnd - toStart);
-                return to;
+        if (e.button === PRIMARY_BUTTON) {
+            button = 'primary';
+        } else if (e.button === SECONDARY_BUTTON) {
+            button = 'secondary';
+        }
+        // we don't use middle button as of yet
+
+        if (null !== button) {
+            const mouseDownEvent = {
+                x: e.offsetX,
+                y: e.offsetY,
+                button: button as 'primary' | 'secondary'
             };
 
-        const worldToPixelX = createMapper(
-            -imageWidth / 2,
-            imageWidth / 2,
-            0,
-            imageWidth
-        );
-        const worldToPixelY = createMapper(
-            -imageHeight / 2,
-            imageHeight / 2,
-            imageHeight,
-            0
-        );
-
-        const imageX = worldToPixelX(worldX);
-        const imageY = worldToPixelY(worldY);
-
-        switch (e.button) {
-            case PRIMARY_BUTTON: 
-            switch (store.getState().scene.tool) {
-                case 'dot': {
-                    tools['dot'].onMouseDown(imageX, imageY);
-                }
-                break;
-                case 'line': {
-                    tools['line'].onMouseDown(imageX, imageY);
-                }
-                break;
-            }
-            break;
-            case SECONDARY_BUTTON: {
-                store.dispatch(setRightMouseDown(true));
-            }
-            break;
+            onMouseDown(canvas, program, mouseDownEvent);
         }
-
-        program.updateImageData();
-        program.render();
     };
 
     canvas.onmousemove = e => {
-        const [deltaX, deltaY] = [e.movementX, e.movementY];
-        const { leftMouseDown, rightMouseDown } = store.getState().scene;
-
-
-        const { cameraScale } = store.getState().scene;
-        const [moveX, moveY] = screenToWorldUnits([deltaX, deltaY], canvas, {
-            width: (cameraScale * canvas.width) / canvas.height,
-            height: cameraScale,
-            scale: cameraScale,
-            x: store.getState().scene.cameraX,
-            y: store.getState().scene.cameraY,
-        });
-
-        if (rightMouseDown) {
-            store.dispatch(addCameraPosition({ x: moveX, y: moveY }));
-        }
-
-        if (leftMouseDown) {
-            const { tool } = store.getState().scene;
-
-            if (tool === 'line') {
-                // update the line tool
-                // add a tool tip
-            } else if (tool === 'dot') {
-                // update the dot tool, nothing to do really
-            }
-        }
-
-        program.updateScene();
-        program.render();
+        const mouseMoveEvent = {
+            x: e.offsetX,
+            y: e.offsetY,
+            deltaX: e.movementX,
+            deltaY: e.movementY,
+        };
+        onMouseMove(canvas, program, mouseMoveEvent);
     };
 
     canvas.onmouseup = e => {
         e.preventDefault();
-        const [clickX, clickY] = [e.offsetX, e.offsetY];
-        const { cameraScale, cameraX, cameraY, imageWidth, imageHeight } =
-            store.getState().scene;
-        const [worldX, worldY] = screenToWorld([clickX, clickY], canvas, {
-            scale: cameraScale,
-            width: (cameraScale * canvas.width) / canvas.height,
-            height: cameraScale,
-            x: cameraX,
-            y: cameraY,
-        });
-
-        const createMapper =
-            (
-                fromStart: number,
-                fromEnd: number,
-                toStart: number,
-                toEnd: number
-            ) =>
-            (x: number) => {
-                // Get where x is from fromStart (0) to fromEnd (1) as a percentage
-                const fromPercent = (x - fromStart) / (fromEnd - fromStart);
-                // Apply that percentage to the 'to' range
-                const to = toStart + fromPercent * (toEnd - toStart);
-                return to;
-            };
-
-        const worldToPixelX = createMapper(
-            -imageWidth / 2,
-            imageWidth / 2,
-            0,
-            imageWidth
-        );
-        const worldToPixelY = createMapper(
-            -imageHeight / 2,
-            imageHeight / 2,
-            imageHeight,
-            0
-        );
-
-        const imageX = worldToPixelX(worldX);
-        const imageY = worldToPixelY(worldY);
-        const pixelX = Math.floor(worldToPixelX(worldX));
-        const pixelY = Math.floor(worldToPixelY(worldY));
 
         const PRIMARY_BUTTON = 0;
         const SECONDARY_BUTTON = 2;
 
-        const { tool } = store.getState().scene;
+        let button = null;
 
-        if (e.button == SECONDARY_BUTTON) {
-            store.dispatch(setRightMouseDown(false));
-        } else if (e.button == PRIMARY_BUTTON) {
-            if (tool === 'line') {
-                // draw the line on the image
-                if (
-                    -imageWidth / 2 <= worldX &&
-                    worldX <= imageWidth / 2 &&
-                    -imageHeight / 2 <= worldY &&
-                    worldY <= imageHeight / 2
-                ) {
-                    tools['line'].onMouseUp(imageX, imageY);
-                }
-            }
-            store.dispatch(setLeftMouseDown(false));
+        if (e.button === PRIMARY_BUTTON) {
+            button = 'primary';
+        } else if (e.button === SECONDARY_BUTTON) {
+            button = 'secondary';
         }
+        // we don't use middle button as of yet
 
-        program.updateImageData();
-        program.render();
+        if (null !== button) {
+            const mouseUpEvent = {
+                x: e.offsetX,
+                y: e.offsetY,
+                button: button as 'primary' | 'secondary'
+            };
+
+            onMouseUp(canvas, program, mouseUpEvent);
+        }
     };
 
     canvas.onwheel = e => {
         e.preventDefault();
 
-        if (e.deltaY !== 0) {
-            const direction = Math.sign(e.deltaY);
-            const scalePercentage = 1.0 + 0.07 * direction;
-            store.dispatch(multiplyCameraScale(scalePercentage));
-
-            program.updateScene();
-            program.render();
-        }
+        onMouseWheel(canvas, program, e);
     };
 
     const downloadButton = document.getElementById('image-download');

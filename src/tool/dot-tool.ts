@@ -1,8 +1,7 @@
-import { screenToWorld } from "../camera";
-import store, { setImagePixel } from "../store";
-import { ToolInterface } from "./line-tool";
+import store, { setImagePixel } from '../store';
+import { Tool } from '.';
 
-export default class DotTool implements ToolInterface {
+export default class DotTool implements Tool {
     onMouseDown(imageX: number, imageY: number): void {
         const pixelX = Math.floor(imageX);
         const pixelY = Math.floor(imageY);

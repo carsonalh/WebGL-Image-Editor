@@ -1,6 +1,5 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-export type Tool = 'dot' | 'line';
+import { ToolKey } from './tool';
 
 const INITIAL_WIDTH = 32;
 const INITIAL_HEIGHT = 32;
@@ -13,7 +12,7 @@ const sceneSlice = createSlice({
         cameraScale: 32,
         leftMouseDown: false,
         rightMouseDown: false,
-        tool: 'dot' as Tool,
+        tool: 'dot' as ToolKey,
         imageWidth: INITIAL_WIDTH,
         imageHeight: INITIAL_HEIGHT,
         imageData: new Array<number>(4 * INITIAL_WIDTH * INITIAL_HEIGHT).fill(

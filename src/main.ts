@@ -23,7 +23,7 @@ export default function main(gl: WebGLRenderingContext) {
     program.render = () => render(gl, program);
 
     // Sets up the input hooks
-    setupInput(gl.canvas, program);
+    setupInput(gl.canvas as HTMLCanvasElement, program);
 
     program.updateScene();
     program.updateImageData();

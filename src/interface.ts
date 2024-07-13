@@ -79,8 +79,6 @@ export function onMouseDown(canvas: HTMLCanvasElement, program: Program, e: Mous
     const imageX = worldToPixelX(worldX as number);
     const imageY = worldToPixelY(worldY as number);
 
-    console.log(`mouse down at (${imageX}, ${imageY})`);
-
     switch (e.button) {
         case 'primary': 
         switch (store.getState().scene.tool) {
@@ -99,6 +97,8 @@ export function onMouseDown(canvas: HTMLCanvasElement, program: Program, e: Mous
         }
         break;
     }
+
+    console.log('updating the image data...')
 
     program.updateImageData();
     program.render();
@@ -178,8 +178,6 @@ export function onMouseUp(canvas: HTMLCanvasElement, program: Program, e: MouseD
 
     const imageX = worldToPixelX(worldX as number);
     const imageY = worldToPixelY(worldY as number);
-
-    console.log(`mouse up at (${imageX}, ${imageY})`);
 
     const { tool } = store.getState().scene;
 

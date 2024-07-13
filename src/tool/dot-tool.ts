@@ -1,5 +1,6 @@
 import store, { setImagePixel } from '../store';
 import { Tool } from '.';
+import { parseColorInput } from '../input';
 
 export default class DotTool implements Tool {
     onMouseDown(imageX: number, imageY: number): void {
@@ -12,19 +13,7 @@ export default class DotTool implements Tool {
             0 <= imageX && imageX < imageWidth &&
             0 <= imageY && imageY < imageHeight
         ) {
-            const colorPicker = document.getElementById(
-                'color-picker'
-            ) as HTMLInputElement;
-            if (!colorPicker) {
-                throw new Error('The color picker element could not be found.');
-            }
-
-            // const color = [...parseColorInput(colorPicker.value), 0xff];
-            const color32 = 0xff0000ff;
-                // (color[0] << (0 * 8)) |
-                // (color[1] << (1 * 8)) |
-                // (color[2] << (2 * 8)) |
-                // (color[3] << (3 * 8));
+            const color32 = store.getState().scene.color;
 
             store.dispatch(
                 setImagePixel({

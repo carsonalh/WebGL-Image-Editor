@@ -33,19 +33,7 @@ export default class LineTool implements Tool {
         // and y to be the representative for our maths
         if (xAdjusted == 0 && yAdjusted == 0) {
             // draw a dot
-            const colorPicker = document.getElementById(
-                'color-picker'
-            ) as HTMLInputElement;
-            if (!colorPicker) {
-                throw new Error('The color picker element could not be found.');
-            }
-
-            // const color = [...parseColorInput(colorPicker.value), 0xff];
-            const color32 = 0xff0000ff;
-                // (color[0] << (0 * 8)) |
-                // (color[1] << (1 * 8)) |
-                // (color[2] << (2 * 8)) |
-                // (color[3] << (3 * 8));
+            const color32 = store.getState().scene.color;
 
             store.dispatch(
                 setImagePixel({
@@ -59,19 +47,7 @@ export default class LineTool implements Tool {
 
             const direction = Math.sign(pixelX - pixelStartX);
             for (let xi = pixelStartX; Math.abs(xi - pixelStartX) <= Math.abs(pixelX - pixelStartX); xi += direction) {
-                const colorPicker = document.getElementById(
-                    'color-picker'
-                ) as HTMLInputElement;
-                if (!colorPicker) {
-                    throw new Error('The color picker element could not be found.');
-                }
-
-                // const color = [...parseColorInput(colorPicker.value), 0xff];
-                const color32 = 0xff0000ff;
-                    // (color[0] << (0 * 8)) |
-                    // (color[1] << (1 * 8)) |
-                    // (color[2] << (2 * 8)) |
-                    // (color[3] << (3 * 8));
+                const color32 = store.getState().scene.color;
 
                 store.dispatch(
                     setImagePixel({
@@ -85,20 +61,7 @@ export default class LineTool implements Tool {
             // draw a straight line
             const direction = Math.sign(pixelY - pixelStartY);
             for (let yi = pixelStartY; Math.abs(yi - pixelStartY) <= Math.abs(pixelY - pixelStartY); yi += direction) {
-                const colorPicker = document.getElementById(
-                    'color-picker'
-                ) as HTMLInputElement;
-                if (!colorPicker) {
-                    throw new Error('The color picker element could not be found.');
-                }
-
-                // const color = [...parseColorInput(colorPicker.value), 0xff];
-                const color32 = 0xff0000ff;
-                    // (color[0] << (0 * 8)) |
-                    // (color[1] << (1 * 8)) |
-                    // (color[2] << (2 * 8)) |
-                    // (color[3] << (3 * 8));
-
+                const color32 = store.getState().scene.color;
 
                 store.dispatch(
                     setImagePixel({
@@ -165,19 +128,7 @@ export default class LineTool implements Tool {
 
                     if (Math.floor(y0) == Math.floor(y1)) {
                         // We colour xi, y0
-                        const colorPicker = document.getElementById(
-                            'color-picker'
-                        ) as HTMLInputElement;
-                        if (!colorPicker) {
-                            throw new Error('The color picker element could not be found.');
-                        }
-
-                        // const color = [...parseColorInput(colorPicker.value), 0xff];
-                        const color32 = 0xff0000ff;
-                            // (color[0] << (0 * 8)) |
-                            // (color[1] << (1 * 8)) |
-                            // (color[2] << (2 * 8)) |
-                            // (color[3] << (3 * 8));
+                        const color32 = store.getState().scene.color;
 
                         store.dispatch(
                             setImagePixel({
@@ -215,19 +166,7 @@ export default class LineTool implements Tool {
                         // we colour xi, colouredY
                         console.log(`coloring hard case at (${xi}, ${colouredY})`);
 
-                        const colorPicker = document.getElementById(
-                            'color-picker'
-                        ) as HTMLInputElement;
-                        if (!colorPicker) {
-                            throw new Error('The color picker element could not be found.');
-                        }
-
-                        // const color = [...parseColorInput(colorPicker.value), 0xff];
-                        const color32 = 0xff0000ff;
-                            // (color[0] << (0 * 8)) |
-                            // (color[1] << (1 * 8)) |
-                            // (color[2] << (2 * 8)) |
-                            // (color[3] << (3 * 8));
+                        const color32 = store.getState().scene.color;
 
                         store.dispatch(
                             setImagePixel({
@@ -252,20 +191,7 @@ export default class LineTool implements Tool {
 
                     if (Math.floor(x0) == Math.floor(x1)) {
                         // Colour (x0, yi)
-                        const colorPicker = document.getElementById(
-                            'color-picker'
-                        ) as HTMLInputElement;
-                        if (!colorPicker) {
-                            throw new Error('The color picker element could not be found.');
-                        }
-
-                        // const color = [...parseColorInput(colorPicker.value), 0xff];
-                        const color32 = 0xff0000ff;
-                            // (color[0] << (0 * 8)) |
-                            // (color[1] << (1 * 8)) |
-                            // (color[2] << (2 * 8)) |
-                            // (color[3] << (3 * 8));
-
+                        const color32 = store.getState().scene.color;
 
                         store.dispatch(
                             setImagePixel({
@@ -287,19 +213,7 @@ export default class LineTool implements Tool {
                         const colouredX = area > 0 ? Math.max(fx0, fx1) : Math.min(fx0, fx1);
 
                         // we colour y0, colouredX
-                        const colorPicker = document.getElementById(
-                            'color-picker'
-                        ) as HTMLInputElement;
-                        if (!colorPicker) {
-                            throw new Error('The color picker element could not be found.');
-                        }
-
-                        // const color = [...parseColorInput(colorPicker.value), 0xff];
-                        const color32 = 0xff0000ff;
-                            // (color[0] << (0 * 8)) |
-                            // (color[1] << (1 * 8)) |
-                            // (color[2] << (2 * 8)) |
-                            // (color[3] << (3 * 8));
+                        const color32 = store.getState().scene.color;
 
                         store.dispatch(
                             setImagePixel({

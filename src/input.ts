@@ -1,5 +1,6 @@
 import store, {
     addCameraPosition,
+    setColor,
     setImage,
     setImageSize,
     setLeftMouseDown,
@@ -94,6 +95,23 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
 
         onMouseWheel(canvas, program, e);
     };
+
+    const colorPickerElement = document.getElementById('color-picker');
+
+    if (colorPickerElement != null) {
+        colorPickerElement.onchange = e => {
+            const hexColor = (e.target as any).value as string;
+            const colorBytes = [...parseColorInput(hexColor), 0xff] as [number, number, number, number];
+            const color32 =
+                ((colorBytes[0] << 8 * 3) |
+                 (colorBytes[1] << 8 * 2) |
+                 (colorBytes[2] << 8 * 1) |
+                 (colorBytes[3] << 8 * 0)) >>> 0;
+            // the >>> 0 makes sure the result is unsigned
+
+            store.dispatch(setColor(color32));
+        };
+    }
 
     const downloadButton = document.getElementById('image-download');
 
@@ -289,7 +307,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     };
 }
 
-export function parseColorInput(string: string) {
+export function parseColorInput(string: string): [number, number, number] {
     const matchResult = string.match(/^#([0-9a-f]{6})$/i);
     if (matchResult && matchResult[1]) {
         const match = matchResult[1];

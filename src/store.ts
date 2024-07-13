@@ -18,6 +18,7 @@ const sceneSlice = createSlice({
         imageData: new Array<number>(4 * INITIAL_WIDTH * INITIAL_HEIGHT).fill(
             0xff
         ),
+        color: 0x000000ff,
     },
     reducers: {
         setCameraPosition(state, action) {
@@ -55,10 +56,10 @@ const sceneSlice = createSlice({
             const pxIndex = y * width + x;
             const { color } = action.payload;
 
-            state.imageData[4 * pxIndex + 0] = (color & 0x000000ff) >> (0 * 8);
-            state.imageData[4 * pxIndex + 1] = (color & 0x0000ff00) >> (1 * 8);
-            state.imageData[4 * pxIndex + 2] = (color & 0x00ff0000) >> (2 * 8);
-            state.imageData[4 * pxIndex + 3] = (color & 0xff000000) >> (3 * 8);
+            state.imageData[4 * pxIndex + 0] = (color & 0xff000000) >> (3 * 8);
+            state.imageData[4 * pxIndex + 1] = (color & 0x00ff0000) >> (2 * 8);
+            state.imageData[4 * pxIndex + 2] = (color & 0x0000ff00) >> (1 * 8);
+            state.imageData[4 * pxIndex + 3] = (color & 0x000000ff) >> (0 * 8);
         },
         setImageData(state, action) {
             state.imageData = action.payload;
@@ -111,6 +112,13 @@ const sceneSlice = createSlice({
 
             state.imageData = Array.from(updatedImage);
         },
+        setColor(state, action: PayloadAction<number>) {
+            if (action.payload < 0x0 || action.payload > 0xffffffff) {
+                throw new RangeError('color must be set to a 32-bit integer, got ' + action.payload);
+            }
+
+            state.color = action.payload;
+        }
     },
 });
 
@@ -126,6 +134,7 @@ export const {
     setImageData,
     setImageSize,
     setImage,
+    setColor,
 } = sceneSlice.actions;
 
 const lineToolSlice = createSlice({

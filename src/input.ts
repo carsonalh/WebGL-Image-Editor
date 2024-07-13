@@ -98,7 +98,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     const downloadButton = document.getElementById('image-download');
 
     if (downloadButton) {
-        downloadButton.onclick = function (ev) {
+        downloadButton.onclick = function (_event: any) {
             // NOTE: Everything you see in this function is a horrible mess to just
             // get the bare minimum working
             // Do not ship or rely on anything you see here
@@ -118,9 +118,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                     const green = imageData[4 * px + 1];
                     const blue = imageData[4 * px + 2];
 
-                    blueChannel[px] = blue;
-                    greenChannel[px] = green;
-                    redChannel[px] = red;
+                    blueChannel[px] = blue as number;
+                    greenChannel[px] = green as number;
+                    redChannel[px] = red as number;
                 }
             }
 
@@ -172,7 +172,7 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
     const uploadButton = document.getElementById('upload-button');
 
     if (uploadButton) {
-        uploadButton.onclick = async function (e) {
+        uploadButton.onclick = async function (_event: any) {
             if (file !== null) {
                 const buffer = await file.arrayBuffer();
                 let image: null | Image = null;
@@ -201,9 +201,9 @@ function setupInput(canvas: HTMLCanvasElement, program: Program) {
                         const index = y * width + x;
                         // 4 bytes per pixel (RGBA)
                         const px = 4 * index;
-                        data[px + 0] = redBytes[index];
-                        data[px + 1] = greenBytes[index];
-                        data[px + 2] = blueBytes[index];
+                        data[px + 0] = redBytes[index] as number;
+                        data[px + 1] = greenBytes[index] as number;
+                        data[px + 2] = blueBytes[index] as number;
                         data[px + 3] = 0xff;
                     }
                 }

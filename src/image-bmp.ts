@@ -101,9 +101,17 @@ const Bmp: BmpImageSerializer = {
                     HEADER_SIZE +
                     bytesPerRow * yUpPositive +
                     BYTES_PER_PIXEL * x;
-                byteArray[px + 0] = blueChannelBytes[y * width + x];
-                byteArray[px + 1] = greenChannelBytes[y * width + x];
-                byteArray[px + 2] = redChannelBytes[y * width + x];
+                const blue = blueChannelBytes[y * width + x];
+                const green = greenChannelBytes[y * width + x];
+                const red = redChannelBytes[y * width + x];
+
+                if (blue === undefined || green === undefined || red === undefined) {
+                    throw new Error('bmp: bad index into one of the channels');
+                }
+
+                byteArray[px + 0] = blue;
+                byteArray[px + 1] = green;
+                byteArray[px + 2] = red;
             }
         }
 
@@ -249,7 +257,7 @@ const enum BitmapCompressionMethod {
  *
  * @param width Width of the image in pixels.
  */
-const getNumBytesPerRow = (width: number, height: number) => {
+const getNumBytesPerRow = (width: number, _height: number) => {
     const bytesPerPixel = 3; // 24-bit color
     const numUnpaddedBytesPerRow = bytesPerPixel * width;
     const numPaddedBytesPerRow = 4 * Math.ceil(numUnpaddedBytesPerRow / 4);
@@ -307,7 +315,7 @@ const readLittleEndianBytes = (
 ) => {
     let read = 0;
     for (let i = offset; i < offset + numBytes; i++) {
-        read |= byteArray[i] << (8 * (i - offset));
+        read |= (byteArray[i] as number) << (8 * (i - offset));
     }
     return read;
 };
@@ -482,9 +490,9 @@ const parseVerifiedBmpFile = (verifiedBmpData: ArrayBuffer): BmpImage => {
             // Read the pixel from y-positive = down
             const px = imageDataStart + numBytesPerRow * yUpPositive + 3 * x;
             // And write it as y-positive = up
-            blueChannel[y * width + x] = bytes[px + 0];
-            greenChannel[y * width + x] = bytes[px + 1];
-            redChannel[y * width + x] = bytes[px + 2];
+            blueChannel[y * width + x] = bytes[px + 0] as number;
+            greenChannel[y * width + x] = bytes[px + 1] as number;
+            redChannel[y * width + x] = bytes[px + 2] as number;
         }
     }
 

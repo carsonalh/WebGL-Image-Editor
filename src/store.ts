@@ -164,7 +164,7 @@ const lineToolSlice = createSlice({
 
             state.displayMask = action.payload;
         },
-        uninitialiseLineTool(state, action) {
+        uninitialiseLineTool(state, _action) {
             state.width = null;
             state.height = null;
             state.displayMask = null;

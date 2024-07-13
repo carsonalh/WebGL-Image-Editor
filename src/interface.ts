@@ -76,8 +76,8 @@ export function onMouseDown(canvas: HTMLCanvasElement, program: Program, e: Mous
         0
     );
 
-    const imageX = worldToPixelX(worldX);
-    const imageY = worldToPixelY(worldY);
+    const imageX = worldToPixelX(worldX as number);
+    const imageY = worldToPixelY(worldY as number);
 
     console.log(`mouse down at (${imageX}, ${imageY})`);
 
@@ -146,7 +146,7 @@ export function onMouseUp(canvas: HTMLCanvasElement, program: Program, e: MouseD
         height: cameraScale,
         x: cameraX,
         y: cameraY,
-    });
+    }) as [number, number];
 
     const createMapper =
         (
@@ -176,8 +176,8 @@ export function onMouseUp(canvas: HTMLCanvasElement, program: Program, e: MouseD
         0
     );
 
-    const imageX = worldToPixelX(worldX);
-    const imageY = worldToPixelY(worldY);
+    const imageX = worldToPixelX(worldX as number);
+    const imageY = worldToPixelY(worldY as number);
 
     console.log(`mouse up at (${imageX}, ${imageY})`);
 
@@ -204,7 +204,7 @@ export function onMouseUp(canvas: HTMLCanvasElement, program: Program, e: MouseD
     program.render();
 }
 
-export function onMouseWheel(canvas: HTMLCanvasElement, program: Program, e: MouseWheelEvent) {
+export function onMouseWheel(_canvas: HTMLCanvasElement, program: Program, e: MouseWheelEvent) {
     if (e.deltaY !== 0) {
         const direction = Math.sign(e.deltaY);
         const scalePercentage = 1.0 + 0.07 * direction;
